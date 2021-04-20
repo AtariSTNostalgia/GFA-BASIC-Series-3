@@ -11,7 +11,7 @@ My goal is to make others enthousiastic about retro-coding using this greatest B
 # GFA BASIC version
 All code was written in GFA BASIC version 3.5 for the Atari ST.
 Merging the listings into newer versions should not be a problem most of the time, but some alterations to the code may be required.
-Please do not use older versions of GFA BASIC since som of the commands will not work.
+Please do not use older versions of GFA BASIC since some of the commands will not work.
 
 # Help and getting started
 For explanation of the code please watch the video series on my YouTube channel:
