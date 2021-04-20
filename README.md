@@ -6,7 +6,7 @@ I will be adding the code after each video had been published.
 The code is provided as-is for everyone to play around with as they please.
 The code will be posted in .LST format, so you can merge whatever parts you want to use into your existing code.
 The code was mainly written for experimenting, learning, and show-and-tell.
-My goals is to make others enthousiastic about retro-coding using this greatest BASIC interpreter ever made.
+My goal is to make others enthousiastic about retro-coding using this greatest BASIC interpreter ever made.
 
 # GFA BASIC version
 All code was written in GFA BASIC version 3.5 for the Atari ST.
