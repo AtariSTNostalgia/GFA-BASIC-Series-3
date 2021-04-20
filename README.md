@@ -1,5 +1,7 @@
 # GFA-BASIC-Series-3
-Here I will save the code that is part of series 3 of my Youtube series on GFA BASIC.
-I will be adding the cade after each video had been published.
+Here you can find all example code I used in the GFA Basic series 3 of videos on my Atari ST Nostalgia YouTube channel.
+I will be adding the code after each video had been published.
+
+
 
 
