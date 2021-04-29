@@ -1,0 +1,82 @@
+'
+' *** MAIN PROGRAM ***
+'
+@preparations
+@bufferscreen
+@predraw
+@defaultscreen
+' @bufferscreen
+@animate
+@endsequence
+'
+' *** PROCEDURES ***
+'
+> PROCEDURE preparations
+  ' *** Preparations ***
+  DIM predrawbuffer|(32255)      ! Array to store pre-draw screen data
+  '
+  ' *** anything direct to visible screen ***
+  '
+  PRINT AT(33,5);"Please wait..."
+  '
+  ' *** Get screen addresses ***
+  logicalscreen%=XBIOS(3)                               !  Logical screen
+  physicalscreen%=XBIOS(2)                              ! Physical screen
+  bufferscreen%=(V:predrawbuffer|(0)+255) AND &HFFFF00  !   Buffer screen
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ' ~XBIOS(5,L:<Write screen>,L:<Displayscreen,<resolution>)
+  ' -1 means No change, 2 means High Res (1=medium, 0 = low)
+  ' When setting resolution, screen gets cleared
+  ' To keep screen content, use -1 for resolution
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE predraw
+  CLS
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  DEFFILL 1,2,4
+  PRBOX 40,60,600,340
+  DEFFILL 0,2,4
+  PRBOX 120,130,520,270
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 130,40," ATARI ST NOSTALGIA "
+  SGET canvas$
+  CLS
+RETURN
+PROCEDURE animate
+  DO UNTIL ASC(INKEY$)=32
+    SPUT canvas$
+    DEFFILL 1,2,RANDOM(24)
+    PCIRCLE RANDOM(640),200,150
+  LOOP
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  '
+  ' *** Here the screen gets cleared ***
+  SPUT canvas$
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  PRINT AT(28,10);"THE END. PRESS ANY KEY."
+  ~INP(2)
+  EDIT
+RETURN
+PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%            ! Swaps the values and thus addr.
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1) ! Tells video to use new values
+RETURN

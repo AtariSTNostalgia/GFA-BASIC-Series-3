@@ -1,0 +1,140 @@
+'
+' *** MAIN PROGRAM ***
+'
+@preparations
+@bufferscreen
+@predraw
+@defaultscreen
+@animate
+@endsequence
+'
+' *** PROCEDURES ***
+'
+> PROCEDURE preparations
+  ' *** Preparations ***
+  DIM predrawbuffer|(32255)      ! Array to store pre-draw screen data
+  DIM xput&(50)                  ! Arrays to store x/y coordinates
+  DIM yput&(50)
+  '
+  ' *** anything direct to visible screen ***
+  '
+  PRINT AT(33,5);"Please wait..."
+  '
+  ' *** Get screen addresses ***
+  logicalscreen%=XBIOS(3)                               !  Logical screen
+  physicalscreen%=XBIOS(2)                              ! Physical screen
+  bufferscreen%=(V:predrawbuffer|(0)+255) AND &HFFFF00  !   Buffer screen
+RETURN
+> PROCEDURE predraw
+  CLS
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  DEFFILL 1,2,4
+  PRBOX 40,60,600,340
+  DEFFILL 0,2,4
+  PRBOX 120,130,520,270
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 130,40," ATARI ST NOSTALGIA "
+  SGET canvas$
+  CLS
+  DEFFILL 1,1,0
+  PRBOX 400,0,496,32
+  DEFTEXT 0,0,0,26
+  TEXT 408,28,"ASN"
+  GET 400,0,496,32,asn$
+  '
+  ' *** Draw sprites ***
+  '
+  FOR i|=0 TO 16 STEP 2
+    PRBOX (i|*16),0,(i|*16)+15,15
+  NEXT i|
+  DEFTEXT 0,0,0,6
+  GRAPHMODE 2
+  TEXT 1,10,""
+  PLOT 15,10
+  DEFTEXT 0,1,0,6
+  TEXT 35,11,"S"
+  TEXT 67,11,"T"
+  TEXT 99,11,"N"
+  TEXT 131,11,"O"
+  TEXT 164,11,"L"
+  TEXT 195,11,"G"
+  TEXT 227,11,"I"
+  TEXT 259,11,"A"
+  PBOX 288,0,303,15
+  DEFFILL 0
+  PRBOX 288,0,303,15
+  '
+  ' *** Get sprites ***
+  '
+  GET 0,0,15,15,logo$
+  GET 32,0,47,15,s$
+  GET 64,0,79,15,t$
+  GET 96,0,111,15,n$
+  GET 128,0,143,15,o$
+  GET 160,0,175,15,l$
+  GET 192,0,207,15,g$
+  GET 224,0,239,15,i$
+  GET 256,0,271,15,a$
+  GET 288,0,303,15,mask$
+  GRAPHMODE 1
+  SPUT canvas$
+RETURN
+> PROCEDURE animate
+  ARRAYFILL xput&(),512                      ! Set same start coordinates
+  ARRAYFILL yput&(),188                      ! for all objects
+  SPUT canvas$                               ! Put background
+  DO UNTIL ASC(INKEY$)=32
+    FOR angle&=0 TO 359 STEP 1               ! For every angle
+      SPUT canvas$
+      INSERT xput&(0)=312+200*COSQ(4*angle&) ! Calculate PUT coordinates
+      INSERT yput&(0)=188-110*SINQ(3*angle&) ! And INSERT them in arrays
+      PUT xput&(22),yput&(22),a$,7
+      PUT xput&(20),yput&(20),i$,7           ! Then PUT all corresponding
+      PUT xput&(18),yput&(18),g$,7           ! Objects on screen
+      PUT xput&(16),yput&(16),l$,7           ! Mode 7 = transparent
+      PUT xput&(14),yput&(14),a$,7
+      PUT xput&(12),yput&(12),t$,7
+      PUT xput&(10),yput&(10),s$,7
+      PUT xput&(8),yput&(8),o$,7
+      PUT xput&(6),yput&(6),n$,7
+      PUT xput&(4),yput&(4),t$,7
+      PUT xput&(2),yput&(2),s$,7             ! In reverse order
+      PUT xput&(0),yput&(0),logo$,7          ! So 1st object is on top
+      PUT 580-xput&(0),350,asn$,6            ! Put bigger logo
+    NEXT angle&
+  LOOP
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  '
+  ' *** Here the screen gets cleared ***
+  SPUT canvas$
+  PAUSE 25
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  PRINT AT(28,10);"THE END. PRESS ANY KEY."
+  ~INP(2)
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ' ~XBIOS(5,L:<Write screen>,L:<Displayscreen,<resolution>)
+  ' -1 means No change, 2 means High Res (1=medium, 0 = low)
+  ' When setting resolution, screen gets cleared
+  ' To keep screen content, use -1 for resolution
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
