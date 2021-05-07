@@ -1,0 +1,143 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+@bufferscreen
+@predraw
+'
+' ***          MAIN PROGRAM           ***
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  DIM xput&(50)                 ! Arrays to store x/y coordinates
+  DIM yput&(50)
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  CLS
+  PRINT AT(33,5);"Please wait..."
+  '
+RETURN
+> PROCEDURE predraw
+  ' *** Draw any canvas you want to use here ***
+  CLS
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  DEFFILL 1,2,4
+  PRBOX 40,60,600,340
+  DEFFILL 0,2,4
+  PRBOX 120,130,520,270
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 130,40," ATARI ST NOSTALGIA "
+  SGET canvas$
+  GRAPHMODE 1
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  '
+  ' *** Here the screen gets cleared ***
+  SPUT canvas$
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 256000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  '  Graphbuffer%=MALLOC(32255) ! Create memory buffer
+  '  IF graphbuffer%<=0
+  '  ~GEMDOS(32,L:sup%)
+  '  IF NOT compiled!
+  '  RESERVE
+  ' ENDIF
+  '  EDIT
+  ' ENDIF
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)  ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)    ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  PRINT AT(35,10);"THE END..."
+  ~INP(2)
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default single screen buffer ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1)
+RETURN

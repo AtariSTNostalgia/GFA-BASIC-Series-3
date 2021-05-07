@@ -1,0 +1,60 @@
+'
+' *** MAIN PROGRAM ***
+'
+@preparations
+PRINT AT(28,6);"Press a key to start..."
+~INP(2)
+@arraydraw
+~INP(2)
+@carddraw
+~INP(2)
+@defaultscreen
+~INP(2)
+CLS
+EDIT
+'
+' *** PROCEDURES ***
+'
+> PROCEDURE preparations
+  ' *** Preparations ***
+  DIM predrawbuffer|(32255)      ! Array to store pre-draw screen data
+  '
+  '
+  ' *** Get screen addresses ***
+  logicalscreen%=XBIOS(3)                               !  Logical screen
+  physicalscreen%=XBIOS(2)                              ! Physical screen
+  bufferscreen%=(V:predrawbuffer|(0)+255) AND &HFFFF00  !   Buffer screen
+RETURN
+PROCEDURE arraydraw
+  '
+  ' ** Set shifter to read from the array Predrawbuffer|() **
+  ' ** But graphics commands will still write to XBIOS(3)  **
+  ~XBIOS(5,L:-1,L:bufferscreen%,-1)
+  '
+  ' ** Graphics commands are now no longer shown on screen **
+  FOR i%=1 TO 20
+    DEFFILL 1,2,RANDOM(24)
+    PBOX RANDOM(640),RANDOM(400),RANDOM(640),RANDOM(400)
+  NEXT i%
+  ~INP(2)
+  '
+  ' ** Write random BYTE values into the array **
+  FOR i%=0 TO 32255
+    predrawbuffer|(i%)=RANDOM(256)
+  NEXT i%
+  ~INP(2)
+  ARRAYFILL predrawbuffer|(),240 ! Binary 11110000
+  ~INP(2)
+  ARRAYFILL predrawbuffer|(),170 ! Binary 10101010
+  ~INP(2)
+  ARRAYFILL predrawbuffer|(),255 ! Binary 11111111
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE carddraw
+  FOR i%=0 TO 31998 STEP 2
+    CARD{bufferscreen%+i%}=RANDOM(65536)
+  NEXT i%
+RETURN

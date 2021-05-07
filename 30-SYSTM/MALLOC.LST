@@ -1,0 +1,45 @@
+freemem%=FRE(0)
+PRINT "Default free memory for program: ";freemem%
+PRINT
+~INP(2)
+'
+RESERVE 128000
+freemem%=FRE(0)
+PRINT "Program memory after reserve: ";freemem%
+PRINT
+~INP(2)
+'
+malloc%=MALLOC(512000)
+freemem%=FRE(0)
+PRINT "Program memory after MALLOC: ";freemem%
+PRINT "Start of allocated memory: ";malloc%
+PRINT
+~INP(2)
+'
+BMOVE XBIOS(2),malloc%,32000
+freemem%=FRE(0)
+PRINT "Program memory after BMOVE to allocated memory: ";freemem%
+PRINT
+~INP(2)
+'
+DIM scr|(32255)
+array%=(V:scr|(0))
+freemem%=FRE(0)
+PRINT "Program memory creating array: ";freemem%
+PRINT "Array start value: ";array%
+PRINT
+~INP(2)
+'
+BMOVE XBIOS(2),array%,32000
+freemem%=FRE(0)
+PRINT "Program memory after BMOVE to array: ";freemem%
+PRINT
+~INP(2)
+'
+ERASE scr|()
+~MFREE(malloc%)
+RESERVE
+freemem%=FRE(0)
+PRINT "After releasing RESERVE: ";freemem%
+~INP(2)
+EDIT
