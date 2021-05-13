@@ -1,0 +1,29 @@
+' *** Short show and tell for the BMOVE command ***
+'
+' SYNTAX: BMOVE <source addr>,<dest addr>,<# of bytes>
+'
+' In Monochrome, every line is 640 bits = 80 bytes
+' So multiples of 80 shift vertically,
+' Anything other also shifts horizontal
+'
+DEFFILL 1,1
+PBOX 160,100,480,299
+DEFFILL 1,2,4
+PBOX 480,275,639,299
+DEFFILL 1,2,1
+PBOX 0,275,159,299
+~INP(2)
+'
+' *** Copy upper 25 lines of the box to top of screen ***
+BMOVE XBIOS(2)+8000,XBIOS(2),2000
+~INP(2)
+'
+' *** Copy upper 25 lines of the box -40 bytes to top of screen ***
+BMOVE XBIOS(2)+8000,XBIOS(2)+4000,1960
+~INP(2)
+'
+' Copy lower bit of the black box to left of the screen ***
+BMOVE XBIOS(2)+22020,XBIOS(2)+22000,1980
+~INP(2)
+CLS
+EDIT

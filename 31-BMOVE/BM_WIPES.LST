@@ -1,0 +1,83 @@
+'
+' ***        EXAMPLE BMOVE TRANSITIONS        ***
+'
+> PROCEDURE slidetransition(wipescreen%)
+  FOR w%=0 TO 31920 STEP 80
+    VSYNC
+    BMOVE wipescreen%+w%,logicalscreen%+w%,80
+  NEXT w%
+RETURN
+> PROCEDURE upsidedowntransition(wipescreen%)
+  FOR w%=31920 TO 0 STEP -80
+    BMOVE wipescreen%+31920-w%,logicalscreen%+w%,80
+  NEXT w%
+RETURN
+> PROCEDURE coverscrolltransition(wipescreen%)
+  FOR w%=0 TO 31680 STEP 320
+    VSYNC
+    BMOVE logicalscreen%+32000-w%,logicalscreen%+32000-w%-320,w%
+    BMOVE wipescreen%+w%,logicalscreen%+31680,320
+  NEXT w%
+RETURN
+> PROCEDURE interlacetransition(wipescreen%)
+  FOR w%=0 TO 31920 STEP 160
+    VSYNC
+    BMOVE wipescreen%+w%,logicalscreen%+w%,80
+  NEXT w%
+  FOR w%=80 TO 31920 STEP 160
+    VSYNC
+    BMOVE wipescreen%+w%,logicalscreen%+w%,80
+  NEXT w%
+RETURN
+'
+' ****************************************************
+' **               BMOVE TRANSITIONS                **
+' **    Code below done in 1990 by Carlos Tirado    **
+' **  Altered for a bit of user-friendlyness by me  **
+' ****************************************************
+'
+'
+> PROCEDURE scrolltransition(wipescreen%)
+  FOR w%=0 TO 31680 STEP 320
+    VSYNC
+    BMOVE logicalscreen%+320,logicalscreen%,31680
+    BMOVE wipescreen%+w%,logicalscreen%+31680,320
+  NEXT w%
+RETURN
+> PROCEDURE uncovertransition(wipescreen%)
+  FOR w%=0 TO 15840 STEP 160
+    BMOVE logicalscreen%+160,logicalscreen%,15840
+    BMOVE wipescreen%+w%,logicalscreen%+15840,160
+    BMOVE logicalscreen%+16000,logicalscreen%+16160,15840
+    BMOVE wipescreen%+31840-w%,logicalscreen%+16000,160
+  NEXT w%
+RETURN
+> PROCEDURE covertransition(wipescreen%)
+  FOR w%=16000 TO 0 STEP -160
+    BMOVE wipescreen%+w%,logicalscreen%,16000-w%
+    BMOVE wipescreen%+16000,logicalscreen%+16000+w%,16000-w%
+  NEXT w%
+RETURN
+> PROCEDURE venetiantransition(wipescreen%)
+  FOR w%=0 TO 3920 STEP 80   ! 50 steps of 1 scanline
+    FOR w2%=0 TO 28000 STEP 4000  ! Copy 1 scanline and go down 50 lines
+      BMOVE wipescreen%+4000-w%-80+w2%,logicalscreen%+w2%,w%+80
+    NEXT w2%
+  NEXT w%
+RETURN
+> PROCEDURE rolldowntransition(wipescreen%)
+  FOR w%=1 TO 39
+    BMOVE logicalscreen%,logicalscreen%+160,80*w%
+    BMOVE wipescreen%+80*(w%+w%+1),logicalscreen%+80,80
+    BMOVE wipescreen%+80*(w%+w%+2),logicalscreen%,80
+  NEXT w%
+  FOR w%=0 TO 319
+    BMOVE logicalscreen%+(80*w%),logicalscreen%+(80*w%)+160,3200
+    BMOVE wipescreen%+80*w%,logicalscreen%+80*w%,80
+    BMOVE wipescreen%+80*w%+3280,logicalscreen%+80*w%+80,80
+  NEXT w%
+  FOR w%=40 DOWNTO 1
+    BMOVE logicalscreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%-1),w%*80
+    BMOVE wipescreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%+1),160
+  NEXT w%
+RETURN
