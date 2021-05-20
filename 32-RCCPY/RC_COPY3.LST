@@ -1,0 +1,240 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+@bufferscreen
+@predraw
+'
+' ***          MAIN PROGRAM           ***
+@defaultscreen
+@animatercc
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  DIM xput&(50)                 ! Arrays to store x/y coordinates
+  DIM yput&(50)
+  spritebuffer%=graphbuffer%+32000
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  PRINT AT(33,5);"Please wait..."
+  '
+RETURN
+> PROCEDURE predraw
+  CLS
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  DEFFILL 1,2,4
+  PRBOX 40,60,600,340
+  DEFFILL 0
+  PRBOX 120,130,520,270
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 130,40," ATARI ST NOSTALGIA "
+  BMOVE bufferscreen%,graphbuffer%,32000
+  CLS
+  DEFFILL 1,1,0
+  PRBOX 400,0,496,32
+  DEFTEXT 0,0,0,26
+  TEXT 408,28,"ASN"
+  '
+  ' *** Draw sprites ***
+  '
+  FOR i|=0 TO 16 STEP 2
+    PRBOX (i|*16),0,(i|*16)+15,15
+  NEXT i|
+  DEFTEXT 0,0,0,6
+  GRAPHMODE 2
+  TEXT 1,10,""
+  PLOT 15,10
+  DEFTEXT 0,1,0,6
+  TEXT 35,11,"S"
+  TEXT 67,11,"T"
+  TEXT 99,11,"N"
+  TEXT 131,11,"O"
+  TEXT 164,11,"L"
+  TEXT 195,11,"G"
+  TEXT 227,11,"I"
+  TEXT 259,11,"A"
+  PBOX 288,0,303,15
+  DEFFILL 0
+  PRBOX 288,0,303,15
+  GRAPHMODE 1
+  BMOVE bufferscreen%,spritebuffer%,2560
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  BMOVE graphbuffer%,XBIOS(2),32000
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+PROCEDURE animatercc
+  '
+  ' *** Put background in both screens ***
+  BMOVE graphbuffer%,bufferscreen%,32000
+  BMOVE graphbuffer%,logicalscreen%,32000
+  '
+  ' *** Fill the array with start coordinates ***
+  ARRAYFILL xput&(),512
+  ARRAYFILL yput&(),192
+  '
+  ' *** Animation loop ***
+  DO UNTIL ASC(INKEY$)=32
+    FOR angle&=0 TO 359 STEP 1
+      VSYNC
+      BMOVE graphbuffer%,bufferscreen%,32000  ! Put the background
+      '
+      ' *** Write new coordinates ***
+      INSERT xput&(0)=312+200*COSQ(4*angle&)
+      INSERT yput&(0)=192-110*SINQ(3*angle&)
+      '
+      ' *** draw masks ***
+      FOR mask|=0 TO 22 STEP 2
+        RC_COPY spritebuffer%,288,0,16,16 TO bufferscreen%,xput&(mask|),yput&(mask|),1
+      NEXT mask|
+      '
+      ' *** Draw sprites ***
+      RC_COPY spritebuffer%,256,0,16,16 TO bufferscreen%,xput&(22),yput&(22),7
+      RC_COPY spritebuffer%,224,0,16,16 TO bufferscreen%,xput&(20),yput&(20),7
+      RC_COPY spritebuffer%,192,0,16,16 TO bufferscreen%,xput&(18),yput&(18),7
+      RC_COPY spritebuffer%,160,0,16,16 TO bufferscreen%,xput&(16),yput&(16),7
+      RC_COPY spritebuffer%,256,0,16,16 TO bufferscreen%,xput&(14),yput&(14),7
+      RC_COPY spritebuffer%,64,0,16,16 TO bufferscreen%,xput&(12),yput&(12),7
+      RC_COPY spritebuffer%,32,0,16,16 TO bufferscreen%,xput&(10),yput&(10),7
+      RC_COPY spritebuffer%,128,0,16,16 TO bufferscreen%,xput&(8),yput&(8),7
+      RC_COPY spritebuffer%,96,0,16,16 TO bufferscreen%,xput&(6),yput&(6),7
+      RC_COPY spritebuffer%,64,0,16,16 TO bufferscreen%,xput&(4),yput&(4),7
+      RC_COPY spritebuffer%,32,0,16,16 TO bufferscreen%,xput&(2),yput&(2),7
+      RC_COPY spritebuffer%,0,0,16,16 TO bufferscreen%,xput&(0),yput&(0),7
+      RC_COPY spritebuffer%,400,0,96,32 TO bufferscreen%,272-200*COSQ(2*angle&),356,6
+      @swap
+      '
+    NEXT angle&
+  LOOP
+  FOR endstep&=0 TO 22
+    VSYNC
+    BMOVE graphbuffer%,bufferscreen%,32000
+    INSERT xput&(0)=512
+    INSERT yput&(0)=192
+    '
+    ' *** draw masks ***
+    FOR mask|=0 TO 22 STEP 2
+      RC_COPY spritebuffer%,288,0,16,16 TO bufferscreen%,xput&(mask|),yput&(mask|),1
+    NEXT mask|
+    '
+    RC_COPY spritebuffer%,256,0,16,16 TO bufferscreen%,xput&(22),yput&(22),7
+    RC_COPY spritebuffer%,224,0,16,16 TO bufferscreen%,xput&(20),yput&(20),7
+    RC_COPY spritebuffer%,192,0,16,16 TO bufferscreen%,xput&(18),yput&(18),7
+    RC_COPY spritebuffer%,160,0,16,16 TO bufferscreen%,xput&(16),yput&(16),7
+    RC_COPY spritebuffer%,256,0,16,16 TO bufferscreen%,xput&(14),yput&(14),7
+    RC_COPY spritebuffer%,64,0,16,16 TO bufferscreen%,xput&(12),yput&(12),7
+    RC_COPY spritebuffer%,32,0,16,16 TO bufferscreen%,xput&(10),yput&(10),7
+    RC_COPY spritebuffer%,128,0,16,16 TO bufferscreen%,xput&(8),yput&(8),7
+    RC_COPY spritebuffer%,96,0,16,16 TO bufferscreen%,xput&(6),yput&(6),7
+    RC_COPY spritebuffer%,64,0,16,16 TO bufferscreen%,xput&(4),yput&(4),7
+    RC_COPY spritebuffer%,32,0,16,16 TO bufferscreen%,xput&(2),yput&(2),7
+    RC_COPY spritebuffer%,0,0,16,16 TO bufferscreen%,xput&(0),yput&(0),7
+    '
+    @swap
+  NEXT endstep&
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 256000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(65000) ! Create memory buffer
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)  ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)    ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  PRINT AT(35,10);"THE END..."
+  ~INP(2)
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1)
+RETURN
