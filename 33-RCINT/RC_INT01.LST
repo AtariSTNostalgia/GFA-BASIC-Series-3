@@ -1,0 +1,23 @@
+' *** Draw 2 boxes intersecting each other ***
+TEXT 102,127,"1"
+BOX 100,100,400,200
+x&=200
+y&=150
+w&=300
+h&=100
+BOX x&,y&,x&+w&,y&+h&
+TEXT 483,245,"2"
+PRINT AT(10,2);"x&: ";x&,"y&: ";y&,"w&: ";w&,"h&: ";h&
+~INP(2)
+'
+' *** Draw intersected area black ***
+' SYNTAX: RC_INTERSECT(x1,y1,width1,height1,x2,y2,width2,height2)
+' 1st 4 can be numbers, but last 4 must be variables.
+' Function will write intersection to x2,y2,width2,height2
+IF RC_INTERSECT(100,100,300,100,x&,y&,w&,h&)
+  PRINT AT(10,4);"x&: ";x&,"y&: ";y&,"w&: ";w&,"h&: ";h&
+  ~INP(2)
+  PBOX x&,y&,x&+w&,y&+h&
+ENDIF
+~INP(2)
+EDIT
