@@ -1,0 +1,228 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+'
+' ***          MAIN PROGRAM           ***
+@bufferscreen
+@predraw
+@plotball
+PAUSE 20
+@bmoveloop
+@shifterloop
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE plotball
+  i&=0
+  screen&=0
+  mode|=7
+  '
+  DO UNTIL i&=60
+    '
+    ' ***  Calculate and plot ***
+    '
+    ~XBIOS(5,L:cyclescreen%+screen&*32000,L:-1,-1)
+    ' BALL1
+    x&=256*COSQ(i&)
+    y&=160*SINQ(i&)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ' BALL2
+    x&=256*COSQ(i&+60)
+    y&=160*SINQ(i&+60)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ' BALL3
+    x&=256*COSQ(i&+120)
+    y&=160*SINQ(i&+120)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ' BALL4
+    x&=256*COSQ(i&+180)
+    y&=160*SINQ(i&+180)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ' BALL5
+    x&=256*COSQ(i&+240)
+    y&=160*SINQ(i&+240)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ' BALL6
+    x&=256*COSQ(i&+300)
+    y&=160*SINQ(i&+300)
+    xplot&=240+x&
+    yplot&=120-y&
+    PUT xplot&,yplot&,ball$,mode|
+    '
+    ADD i&,3
+    INC screen&
+    RC_COPY bufferscreen%,1,1,16,16 TO physicalscreen%,152+(i&/3)*16,100
+  LOOP
+RETURN
+> PROCEDURE bmoveloop
+  REPEAT
+    FOR scroll%=0 TO 608000 STEP 32000
+      VSYNC
+      BMOVE cyclescreen%+scroll%,logicalscreen%,32000
+    NEXT scroll%
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE shifterloop
+  REPEAT
+    FOR scroll%=0 TO 608000 STEP 32000
+      VSYNC
+      ~XBIOS(5,L:-1,L:cyclescreen%+scroll%,-1)
+    NEXT scroll%
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  CLS
+  PRINT AT(33,5);"Please wait..."
+  BOX 149,97,488,116
+  '
+RETURN
+> PROCEDURE predraw
+  '
+  ' *** Pre create big circle
+  CLS
+  PCIRCLE 340,80,80
+  DEFFILL 1,0,0
+  PBOX 280,50,400,110
+  GET 260,0,420,160,ball$
+  '
+  ' *** Draw canvas ***
+  CLS
+  GRAPHMODE 1
+  DEFFILL 1,4,0
+  PBOX 0,0,639,399
+  DEFFILL 1,0,0
+  PBOX 120,20,520,60
+  DEFTEXT 1,0,0,26
+  TEXT 130,52," ATARI ST NOSTALGIA "
+  '
+  ' *** Move canvas to 20 screens in graphbuffer ***
+  FOR i&=0 TO 19
+    BMOVE bufferscreen%,cyclescreen%+i&*32000,32000
+  NEXT i&
+  GRAPHMODE 1
+  RC_COPY bufferscreen%,1,1,16,16 TO physicalscreen%,152,100
+RETURN
+> PROCEDURE endsequence
+  '
+  ' *** Here the screen gets cleared ***
+  @defaultscreen
+  PRINT AT(35,12);"THE END..."
+  ~INP(2)
+RETURN
+> PROCEDURE checkscrollscreen
+  scroll%=0
+  REPEAT
+    IF scroll%>620000
+      scroll%=0
+    ENDIF
+    VSYNC
+    ~XBIOS(5,L:-1,L:cyclescreen%+scroll%,-1)
+    ~INP(2)
+    ADD scroll%,32000
+  UNTIL ASC(INKEY$)=27
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 32000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(640255) ! Allocate memory to store graphics and stuff
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  cyclescreen%=(graphbuffer%+255) AND &HFFFFFF00
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)     ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)       ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default single screen buffer ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN

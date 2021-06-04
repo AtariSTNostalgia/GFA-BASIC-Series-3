@@ -1,0 +1,186 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+'
+' ***          MAIN PROGRAM           ***
+@bufferscreen
+@predraw
+@fillscrollbuffer
+@checkscrollscreen
+' @scroll16px
+' @scroll4px
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  '  DIM xput&(50)                 ! Arrays to store x/y coordinates
+  '  DIM yput&(50)
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  CLS
+  PRINT AT(33,5);"Please wait..."
+  '
+RETURN
+> PROCEDURE predraw
+  ' *** Draw any canvas you want to use here ***
+  CLS
+  DEFFILL 1,1
+  PBOX 0,0,639,399
+  GRAPHMODE 3
+  FOR i&=0 TO 639
+    LINE 319,199,i&,0
+    LINE 320,200,i&,399
+  NEXT i&
+  DEFTEXT 1,0,0,26
+  DEFFILL 0
+  GRAPHMODE 2
+  PCIRCLE 79,200,40
+  PCIRCLE 559,200,40
+  TEXT 49,212,"ST"
+  TEXT 529,212,"ST"
+  GRAPHMODE 1
+  '
+  ' *** Move canvas to scrollerscreen ***
+  BMOVE bufferscreen%,scrollscreen%,32000
+  BMOVE bufferscreen%,scrollscreen%+32000,32000
+RETURN
+> PROCEDURE endsequence
+  ~XBIOS(5,L:scrollscreen%,L:scrollscreen%,-1)
+  PAUSE 50
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  PRINT AT(35,10);"THE END..."
+  ~INP(2)
+RETURN
+> PROCEDURE scroll16px
+  REPEAT
+    FOR scroll%=0 TO 30720 STEP 1280
+      VSYNC
+      ~XBIOS(5,L:-1,L:scrollscreen%+scroll%,-1)
+    NEXT scroll%
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE scroll4px
+  REPEAT
+    FOR scroll%=0 TO 99
+      VSYNC
+      ~XBIOS(5,L:-1,L:scrollscreen%+MUL((scroll% MOD 4),64000)+MUL((scroll% DIV 4),1280),-1)
+    NEXT scroll%
+    ' ** If DIV / MOD method is too confusing, embedded FOR / NEXT also works **
+    '    FOR scroll%=0 TO 30720 STEP 1280
+    '   FOR shift|=0 TO 3
+    '  VSYNC
+    '  ~XBIOS(5,L:-1,L:scrollscreen%+64000*shift|+scroll%,-1)
+    ' NEXT shift|
+    ' NEXT scroll%
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE fillscrollbuffer
+  FOR buff|=1 TO 3
+    BMOVE scrollscreen%+(320*buff|),scrollscreen%+(64000*buff|),64000-(320*buff|)
+    BMOVE scrollscreen%,scrollscreen%+((64000*buff|)-(320*buff|)),320*buff|
+  NEXT buff|
+RETURN
+PROCEDURE checkscrollscreen
+  scroll%=0
+  REPEAT
+    IF scroll%>200000
+      scroll%=0
+    ENDIF
+    VSYNC
+    ~XBIOS(5,L:-1,L:scrollscreen%+scroll%,-1)
+    PAUSE 25
+    ADD scroll%,64000
+  UNTIL ASC(INKEY$)=32
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 128000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(256255) ! Allocate memory to store graphics and stuff
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  scrollscreen%=(graphbuffer%+255) AND &HFFFFFF00
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)     ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)       ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default single screen buffer ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
