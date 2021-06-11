@@ -1,0 +1,193 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+@bufferscreen
+@predraw
+'
+' ***          MAIN PROGRAM           ***
+'
+@bit_blt
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  spritebuffer%=graphbuffer%+32000
+  '
+  DIM blit_src%(8),blit_dest%(8),blit_cpy%(8)
+  '
+  ' ** Set fixed values for BITBLT arrays once **
+  blit_src%(0)=spritebuffer%
+  blit_src%(1)=640
+  blit_src%(2)=400
+  blit_src%(3)=40
+  blit_src%(4)=0
+  blit_src%(5)=1
+  '
+  blit_dest%(1)=640   ! Set constant values, and set address after eacht @swap
+  blit_dest%(2)=400   ! Is slightly faster than setting (0)=0 here and
+  blit_dest%(3)=40    ! BITBLT determine all values based on current screen
+  blit_dest%(4)=0
+  blit_dest%(5)=1
+  '
+  blit_cpy%(0)=400
+  blit_cpy%(1)=0
+  blit_cpy%(2)=495
+  blit_cpy%(3)=31
+  blit_cpy%(8)=7
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  CLS
+  PRINT AT(33,5);"Please wait..."
+  '
+RETURN
+PROCEDURE bit_blt
+  angle&=0
+  REPEAT
+    VSYNC
+    blit_dest%(0)=bufferscreen% ! Reset destination after @swap
+    '                           ! XBIOS(3) is slower than using variable
+    '
+    cleanup%=(183-160*SINQ(3*(angle&-1)))*(80)
+    BMOVE graphbuffer%+cleanup%,bufferscreen%+cleanup%,2640
+    INC angle&
+    IF angle&>359
+      angle&=0
+    ENDIF
+    '
+    blit_cpy%(4)=272+200*COSQ(4*angle&)
+    blit_cpy%(5)=184-160*SINQ(3*angle&)
+    blit_cpy%(6)=blit_cpy%(4)+95 !96 pixel object: right.x=left.x+95 pixels
+    blit_cpy%(7)=blit_cpy%(5)+31
+    '
+    BITBLT blit_src%(),blit_dest%(),blit_cpy%()
+    @swap
+  UNTIL ASC(INKEY$)=27
+RETURN
+> PROCEDURE predraw
+  CLS
+  DEFFILL 1,1,0
+  PRBOX 400,0,495,31
+  GRAPHMODE 2
+  DEFTEXT 0,0,0,26
+  TEXT 408,28,"ASN"
+  BMOVE bufferscreen%,spritebuffer%,32000
+  GRAPHMODE 1
+  CLS
+  DEFFILL 1,4
+  PBOX 0,0,639,399
+  DEFFILL 1,0
+  PBOX -1,183,640,216
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 122,212," ATARI ST NOSTALGIA "
+  BMOVE bufferscreen%,logicalscreen%,32000
+  BMOVE bufferscreen%,graphbuffer%,32000
+  GRAPHMODE 1
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  '
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 256000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(65535) ! Allocate memory to store graphics and stuff
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  '  screen1%=(graphbuffer%+255) AND &HFFFFFF00 ! Graphbuffer screen address
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)     ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)       ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  PRINT AT(35,10);"THE END..."
+  ~INP(2)
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default single screen buffer ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1)
+RETURN

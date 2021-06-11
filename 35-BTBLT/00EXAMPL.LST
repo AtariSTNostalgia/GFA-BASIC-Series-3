@@ -1,0 +1,93 @@
+' *** This example draws 2 PBOXes and then copies ***
+' ***   a section of the top into the bottom box  ***
+DEFFILL 1,4
+PBOX 0,0,319,399
+DEFFILL 1,1
+PBOX 0,200,319,399
+'
+' ** First, do it with the RC_COPY command **
+RC_COPY XBIOS(2),16,16,160,96 TO XBIOS(2),74,254,3
+~INP(2)
+'
+' ** redraw boxes **
+CLS
+DEFFILL 1,4
+PBOX 0,0,319,399
+DEFFILL 1,1
+PBOX 0,200,319,399
+'
+' *** Now, we create and configure three arrays for the  ***
+' ***  same copy, but now with the VDI BITBLIT function  ***
+'
+DIM blt_src%(8)  ! Array with parameters of the source "screen"
+DIM blt_dest%(8) ! Array with parameters of the destination "screen"
+DIM blt_cpy%(8)  ! Array with parameters of what and how we want to copy
+'
+' ** Use current screen for source and destination **
+blt_src%(0)=XBIOS(3) ! Screen address. In this case we use the current screen
+blt_src%(1)=640      ! Screen width in pixels (640 in mono)
+blt_src%(2)=400      ! Screen heigth in pixel (400 in mono)
+blt_src%(3)=40       ! Screen width in Words (640/16 in this case)
+blt_src%(4)=0        ! Reserved, always 0
+blt_src%(5)=1        ! Number of bitplanes. Always 1 in mono
+'                 Elements 6-8 are reserved for future extentions, ie. not used
+'                 So probably 6 position arrays instead of 9 are enough.
+' ** If element (0) is set to 0, BITBLT uses values for current screen **
+blt_dest%(0)=0
+'
+' ** Set copy parameters **
+blt_cpy%(0)=16       ! Source:   left X
+blt_cpy%(1)=16       ! Source:    top Y
+blt_cpy%(2)=175      ! Source:  right X
+blt_cpy%(3)=111      ! Source: bottom Y
+blt_cpy%(4)=74       !   Dest:   left X
+blt_cpy%(5)=254      !   Dest:    top Y
+blt_cpy%(6)=233      !   Dest:  right X
+blt_cpy%(7)=353      !   Dest: bottom Y
+blt_cpy%(8)=3        ! Copy mode (like PUT modes)
+'
+' ** After all values are set correct in all three arrays: BLIT! **
+BITBLT blt_src%(),blt_dest%(),blt_cpy%()
+~INP(2)
+'
+' ** redraw boxes **
+CLS
+DEFFILL 1,4
+PBOX 0,0,319,399
+DEFFILL 1,1
+PBOX 0,200,319,399
+'
+' ** create and configure single array for Line-A BITBLT **
+DIM blt%(100)           ! Needs to be 23 elements minimum
+blt%(0)=160             ! Object width in pixels
+blt%(1)=96              ! Object height in pixels
+blt%(2)=1               ! Bitplanes. Mono=1
+blt%(3)=1               ! Foreground color (mono: 1=black)
+blt%(4)=0               ! Background color (mono: 0=white)
+blt%(5)=&H3030303       ! Putmode=> &H0000000 (0) to &HF0F0F0F (15). Here: 3
+blt%(6)=16              ! SOURCE X in pixels
+blt%(7)=16              ! SOURCE Y in pixels
+blt%(8)=XBIOS(3)        ! Adress of source (here current write screen)
+blt%(9)=2               ! Offset to next word of the SAME bitplane (mono: 2)
+blt%(10)=80             ! Offset to next line of source screen (mono: 80 BYTES)
+blt%(11)=2              ! Offset to next bitplane (always 2)
+blt%(12)=74             ! DESTINATION X in pixels
+blt%(13)=254            ! DESTINATION Y in pixels
+blt%(14)=XBIOS(3)       ! Adress of destination screen (here: current screen)
+blt%(15)=2              ! As (9), but for destination
+blt%(16)=80             ! As (10), but for destination
+blt%(17)=2              ! Ad (11), but for destination
+blt%(18)=0              ! Pointer to fill pattern table to AND (0: no pattern)
+blt%(19)=0              ! Offset to next line of mask
+blt%(20)=0              ! Offset to next plane for pattern
+blt%(21)=0              ! Mask as for HLINE. Manual dosn't explain this
+' From element 22 onwards, 24 bytes are for workspace for the Blitter
+' I created big array so nothing else will be in that space.
+'
+' ** After all values are set correct in this array: BLIT! **
+BITBLT blt%()
+'
+' ** Wait and go to editor **
+~INP(2)
+CLS
+EDIT

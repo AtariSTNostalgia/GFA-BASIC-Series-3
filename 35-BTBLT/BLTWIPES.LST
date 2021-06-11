@@ -1,0 +1,178 @@
+' *** Prepare independent BITBLT Arrays ***
+'
+> PROCEDURE wipepreps
+  '  ** Arrays independent of other BITBLT arrays **
+  DIM wipesource%(8),wipedest%(8),blitwipe%(8)
+  wipesource%(1)=640
+  wipesource%(2)=400
+  wipesource%(3)=40
+  wipesource%(4)=0
+  wipesource%(5)=1
+  '
+  ' ** Always transition to current screen **
+  wipedest%(0)=0
+  '
+  ' ** Default Mode = 3 (Always replace) **
+  blitwipe%(8)=3
+RETURN
+'
+' ***  Example transitions done by me   ***
+'
+> PROCEDURE slatstransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=0 TO 39 STEP 2
+    FOR w2%=0 TO 15
+      blitwipe%(0)=w%+w2%*40
+      blitwipe%(1)=0
+      blitwipe%(2)=ADD(blitwipe%(0),1)
+      blitwipe%(3)=399
+      '
+      blitwipe%(4)=blitwipe%(0)
+      blitwipe%(5)=0
+      blitwipe%(6)=blitwipe%(2)
+      blitwipe%(7)=399
+      BITBLT wipesource%(),wipedest%(),blitwipe%()
+    NEXT w2%
+  NEXT w%
+RETURN
+> PROCEDURE curtaintransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=0 TO 319 STEP 4
+    blitwipe%(0)=w%
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(1)=0
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(2)=blitwipe%(0)+3
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(3)=399
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+    '
+    blitwipe%(0)=636-w%
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(1)=0
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(2)=blitwipe%(0)+3
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(3)=399
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+  NEXT w%
+RETURN
+'
+' ****************************************************
+' **    Code below done in 1990 by Carlos Tirado    **
+' **  Altered for a bit of user-friendlyness by me  **
+' ****************************************************
+'
+> PROCEDURE iristransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=1 TO 49 ! <= Change this number when you change the "100"
+    ' ** X/Y start in the middle - 1/100 of the screen dimentions times w% **
+    blitwipe%(0)=wipesource%(1)/2-w%*wipesource%(1)/100
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(1)=wipesource%(2)/2-w%*wipesource%(2)/100
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(2)=wipesource%(1)/2+w%*wipesource%(1)/100-1
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(3)=wipesource%(2)/2+w%*wipesource%(2)/100-1
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+  NEXT w%
+  BMOVE wipescreen%,XBIOS(2),32000
+RETURN
+> PROCEDURE randomtransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  LOCAL a$
+  a$=SPACE$(400)
+  FOR w%=0 TO 399
+    DPOKE VARPTR(a$)+w%*2,w%
+  NEXT w%
+  FOR w%=399 DOWNTO 0
+    rand%=RANDOM(w%)
+    w2%=DPEEK(VARPTR(a$)+rand%*2)
+    blitwipe%(0)=(w2% MOD 20)*INT(wipesource%(1)/20)
+    blitwipe%(1)=INT(w2%/20)*INT(wipesource%(2)/20)
+    blitwipe%(2)=blitwipe%(0)+INT(wipesource%(1)/20)
+    blitwipe%(3)=blitwipe%(1)+INT(wipesource%(2)/20)
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    DPOKE VARPTR(a$)+rand%*2,DPEEK(VARPTR(a$)+w%*2)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+  NEXT w%
+  CLR a$
+RETURN
+> PROCEDURE crosstransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=1 TO 40
+    blitwipe%(0)=0
+    blitwipe%(1)=0
+    blitwipe%(2)=w%*wipesource%(1)/80-1
+    blitwipe%(3)=w%*wipesource%(2)/80
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+    '
+    blitwipe%(1)=wipesource%(2)-blitwipe%(3)
+    blitwipe%(3)=wipesource%(2)-1
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+    '
+    blitwipe%(0)=wipesource%(1)-blitwipe%(2)-1
+    blitwipe%(2)=wipesource%(1)-1
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+    '
+    blitwipe%(1)=0
+    blitwipe%(3)=w%*wipesource%(2)/80
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+  NEXT w%
+RETURN
+> PROCEDURE assembletransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=0 TO 39
+    FOR w2%=0 TO 7
+      blitwipe%(1)=w2%*wipesource%(2)/8
+      blitwipe%(3)=blitwipe%(1)+wipesource%(2)/8
+      IF EVEN(w2%)
+        blitwipe%(0)=w%*wipesource%(1)/40    ! 10 pixels at a time. Even = L->R
+      ELSE
+        blitwipe%(0)=wipesource%(1)-w%*wipesource%(1)/40-wipesource%(1)/40
+      ENDIF
+      blitwipe%(2)=blitwipe%(0)+wipesource%(1)/40-1
+      blitwipe%(4)=blitwipe%(0)
+      blitwipe%(5)=blitwipe%(1)
+      blitwipe%(6)=blitwipe%(2)
+      blitwipe%(7)=blitwipe%(3)
+      BITBLT wipesource%(),wipedest%(),blitwipe%()
+    NEXT w2%
+  NEXT w%
+RETURN
+> PROCEDURE squaretransition(wipescreen%)
+  wipesource%(0)=wipescreen%
+  FOR w%=0 TO 99
+    w2%=w%*2-ODD(INT(w%*2/10))+99*(w%>49)+2*(ODD(INT(w%*2/10)) AND w%>49)
+    blitwipe%(0)=(w2% MOD 10)*INT(wipesource%(1)/10)
+    blitwipe%(1)=INT(w2%/10)*INT(wipesource%(2)/10)
+    blitwipe%(2)=blitwipe%(0)+INT(wipesource%(1)/10)
+    blitwipe%(3)=blitwipe%(1)+INT(wipesource%(2)/10)
+    blitwipe%(4)=blitwipe%(0)
+    blitwipe%(5)=blitwipe%(1)
+    blitwipe%(6)=blitwipe%(2)
+    blitwipe%(7)=blitwipe%(3)
+    BITBLT wipesource%(),wipedest%(),blitwipe%()
+  NEXT w%

@@ -1,0 +1,662 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+@blitpreps
+@bufferscreen
+@predraw
+'
+' ***          MAIN PROGRAM           ***
+@defaultscreen
+@rolldowntransition(graphbuffer%)
+@bltanim
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@endsequence
+@uncovertransition(graphbuffer%)
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  '
+  ' ** Arrays to store X/Y coordinates **
+  DIM xput&(25),yput&(25)
+  '
+  ' ** Arrays to store parameters for BITBLT **
+  ' => All done in @blitpreps procedure
+  '
+  ' ** Set address for spritebuffer **
+  spritebuffer%=graphbuffer%+32000
+  '
+  ' *** Anything to do before switching screens ***
+  CLS
+  PRINT AT(33,5);"Please wait..."
+RETURN
+> PROCEDURE blitpreps
+  '
+  ' ** Store sprite BITBLT parameters source X/Y are fixed **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  ' **   Arr%(14) needs to be se in routine due to @swap   **
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_biglogo% **
+  DIM blt_biglogo%(100)
+  blt_biglogo%(0)=96              ! Object Width
+  blt_biglogo%(1)=32              ! Height
+  blt_biglogo%(2)=1
+  blt_biglogo%(3)=1
+  blt_biglogo%(4)=0
+  blt_biglogo%(5)=&H6060606       ! Putmode => 6060606 for 6
+  blt_biglogo%(6)=400             ! SOURCE X
+  blt_biglogo%(7)=0               ! SOURCE Y
+  blt_biglogo%(8)=spritebuffer%
+  blt_biglogo%(9)=2
+  blt_biglogo%(10)=80
+  blt_biglogo%(11)=2
+  blt_biglogo%(13)=356            ! Y-coord is fixed.
+  blt_biglogo%(15)=2
+  blt_biglogo%(16)=80
+  blt_biglogo%(17)=2
+  blt_biglogo%(18)=0
+  blt_biglogo%(19)=0
+  blt_biglogo%(20)=0
+  blt_biglogo%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_logo% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_logo%(100)
+  blt_logo%(0)=16              ! Object Width
+  blt_logo%(1)=16              ! Height
+  blt_logo%(2)=1
+  blt_logo%(3)=1
+  blt_logo%(4)=0
+  blt_logo%(5)=&H7070707       ! Putmode => &H7070707 for 7
+  blt_logo%(6)=0               ! SOURCE X
+  blt_logo%(7)=0               ! SOURCE Y
+  blt_logo%(8)=spritebuffer%
+  blt_logo%(9)=2
+  blt_logo%(10)=80
+  blt_logo%(11)=2
+  blt_logo%(15)=2
+  blt_logo%(16)=80
+  blt_logo%(17)=2
+  blt_logo%(18)=0
+  blt_logo%(19)=0
+  blt_logo%(20)=0
+  blt_logo%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_s% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_s%(100)
+  blt_s%(0)=16              ! Object Width
+  blt_s%(1)=16              ! Height
+  blt_s%(2)=1
+  blt_s%(3)=1
+  blt_s%(4)=0
+  blt_s%(5)=&H7070707
+  blt_s%(6)=32              ! SOURCE X
+  blt_s%(7)=0               ! SOURCE Y
+  blt_s%(8)=spritebuffer%
+  blt_s%(9)=2
+  blt_s%(10)=80
+  blt_s%(11)=2
+  blt_s%(15)=2
+  blt_s%(16)=80
+  blt_s%(17)=2
+  blt_s%(18)=0
+  blt_s%(19)=0
+  blt_s%(20)=0
+  blt_s%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_t% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_t%(100)
+  blt_t%(0)=16              ! Object Width
+  blt_t%(1)=16              ! Height
+  blt_t%(2)=1
+  blt_t%(3)=1
+  blt_t%(4)=0
+  blt_t%(5)=&H7070707
+  blt_t%(6)=64              ! SOURCE X
+  blt_t%(7)=0               ! SOURCE Y
+  blt_t%(8)=spritebuffer%
+  blt_t%(9)=2
+  blt_t%(10)=80
+  blt_t%(11)=2
+  blt_t%(15)=2
+  blt_t%(16)=80
+  blt_t%(17)=2
+  blt_t%(18)=0
+  blt_t%(19)=0
+  blt_t%(20)=0
+  blt_t%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_n% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_n%(100)
+  blt_n%(0)=16              ! Object Width
+  blt_n%(1)=16              ! Height
+  blt_n%(2)=1
+  blt_n%(3)=1
+  blt_n%(4)=0
+  blt_n%(5)=&H7070707
+  blt_n%(6)=96              ! SOURCE X
+  blt_n%(7)=0               ! SOURCE Y
+  blt_n%(8)=spritebuffer%
+  blt_n%(9)=2
+  blt_n%(10)=80
+  blt_n%(11)=2
+  blt_n%(15)=2
+  blt_n%(16)=80
+  blt_n%(17)=2
+  blt_n%(18)=0
+  blt_n%(19)=0
+  blt_n%(20)=0
+  blt_n%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_o% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_o%(100)
+  blt_o%(0)=16              ! Object Width
+  blt_o%(1)=16              ! Height
+  blt_o%(2)=1
+  blt_o%(3)=1
+  blt_o%(4)=0
+  blt_o%(5)=&H7070707
+  blt_o%(6)=128             ! SOURCE X
+  blt_o%(7)=0               ! SOURCE Y
+  blt_o%(8)=spritebuffer%
+  blt_o%(9)=2
+  blt_o%(10)=80
+  blt_o%(11)=2
+  blt_o%(15)=2
+  blt_o%(16)=80
+  blt_o%(17)=2
+  blt_o%(18)=0
+  blt_o%(19)=0
+  blt_o%(20)=0
+  blt_o%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_a% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_a%(100)
+  blt_a%(0)=16              ! Object Width
+  blt_a%(1)=16              ! Height
+  blt_a%(2)=1
+  blt_a%(3)=1
+  blt_a%(4)=0
+  blt_a%(5)=&H7070707
+  blt_a%(6)=256             ! SOURCE X
+  blt_a%(7)=0               ! SOURCE Y
+  blt_a%(8)=spritebuffer%
+  blt_a%(9)=2
+  blt_a%(10)=80
+  blt_a%(11)=2
+  blt_a%(15)=2
+  blt_a%(16)=80
+  blt_a%(17)=2
+  blt_a%(18)=0
+  blt_a%(19)=0
+  blt_a%(20)=0
+  blt_a%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_l% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_l%(100)
+  blt_l%(0)=16              ! Object Width
+  blt_l%(1)=16              ! Height
+  blt_l%(2)=1
+  blt_l%(3)=1
+  blt_l%(4)=0
+  blt_l%(5)=&H7070707
+  blt_l%(6)=160             ! SOURCE X
+  blt_l%(7)=0               ! SOURCE Y
+  blt_l%(8)=spritebuffer%
+  blt_l%(9)=2
+  blt_l%(10)=80
+  blt_l%(11)=2
+  blt_l%(15)=2
+  blt_l%(16)=80
+  blt_l%(17)=2
+  blt_l%(18)=0
+  blt_l%(19)=0
+  blt_l%(20)=0
+  blt_l%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_g% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_g%(100)
+  blt_g%(0)=16              ! Object Width
+  blt_g%(1)=16              ! Height
+  blt_g%(2)=1
+  blt_g%(3)=1
+  blt_g%(4)=0
+  blt_g%(5)=&H7070707
+  blt_g%(6)=192             ! SOURCE X
+  blt_g%(7)=0               ! SOURCE Y
+  blt_g%(8)=spritebuffer%
+  blt_g%(9)=2
+  blt_g%(10)=80
+  blt_g%(11)=2
+  blt_g%(15)=2
+  blt_g%(16)=80
+  blt_g%(17)=2
+  blt_g%(18)=0
+  blt_g%(19)=0
+  blt_g%(20)=0
+  blt_g%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_i% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_i%(100)
+  blt_i%(0)=16              ! Object Width
+  blt_i%(1)=16              ! Height
+  blt_i%(2)=1
+  blt_i%(3)=1
+  blt_i%(4)=0
+  blt_i%(5)=&H7070707
+  blt_i%(6)=224             ! SOURCE X
+  blt_i%(7)=0               ! SOURCE Y
+  blt_i%(8)=spritebuffer%
+  blt_i%(9)=2
+  blt_i%(10)=80
+  blt_i%(11)=2
+  blt_i%(15)=2
+  blt_i%(16)=80
+  blt_i%(17)=2
+  blt_i%(18)=0
+  blt_i%(19)=0
+  blt_i%(20)=0
+  blt_i%(21)=0
+  '
+  ' ** Create and parameter array for Line-A BITBLT: blt_mask% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_mask%(100)
+  blt_mask%(0)=16              ! Object Width
+  blt_mask%(1)=16              ! Height
+  blt_mask%(2)=1
+  blt_mask%(3)=1
+  blt_mask%(4)=0
+  blt_mask%(5)=&H1010101       ! Putmode => &H1010101 for 1 (masking)
+  blt_mask%(6)=288             ! SOURCE X
+  blt_mask%(7)=0               ! SOURCE Y
+  blt_mask%(8)=spritebuffer%
+  blt_mask%(9)=2
+  blt_mask%(10)=80
+  blt_mask%(11)=2
+  blt_mask%(15)=2
+  blt_mask%(16)=80
+  blt_mask%(17)=2
+  blt_mask%(18)=0
+  blt_mask%(19)=0
+  blt_mask%(20)=0
+  blt_mask%(21)=0
+RETURN
+> PROCEDURE predraw
+  '
+  ' ** Draw and store background **
+  CLS
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  DEFFILL 1,2,4
+  PRBOX 40,60,600,340
+  DEFFILL 0
+  PRBOX 120,130,520,270
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 130,40," ATARI ST NOSTALGIA "
+  BMOVE bufferscreen%,graphbuffer%,32000
+  '
+  ' ** Draw big logo **
+  CLS
+  DEFFILL 1,1,0
+  PRBOX 400,0,495,31
+  DEFTEXT 0,0,0,26
+  TEXT 408,28,"ASN"
+  '
+  ' ** Draw sprites **
+  FOR i|=0 TO 16 STEP 2
+    PRBOX (i|*16),0,(i|*16)+16,15
+  NEXT i|
+  DEFTEXT 0,0,0,6
+  GRAPHMODE 2
+  TEXT 1,10,""
+  PLOT 15,10
+  DEFTEXT 0,1,0,6
+  TEXT 35,11,"S"
+  TEXT 67,11,"T"
+  TEXT 99,11,"N"
+  TEXT 131,11,"O"
+  TEXT 164,11,"L"
+  TEXT 195,11,"G"
+  TEXT 227,11,"I"
+  TEXT 259,11,"A"
+  '
+  ' ** Create mask **
+  PBOX 288,0,303,15
+  DEFFILL 0
+  PRBOX 289,1,302,14
+  '
+  ' ** Move all sprites to spritebuffer and return to default graphmode  **
+  GRAPHMODE 1
+  BMOVE bufferscreen%,spritebuffer%,2560
+RETURN
+> PROCEDURE endsequence
+  @defaultscreen
+  BMOVE graphbuffer%,XBIOS(2),32000
+  DEFFILL 1
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+  '  DEFFILL 0
+  ' FOR box&=0 TO 200
+  ' PBOX 0,200-box&,639,200-(box&+1)
+  ' PBOX 0,200+box&,639,200+(box&+1)
+  ' NEXT box&
+RETURN
+> PROCEDURE bltanim
+  BMOVE graphbuffer%,bufferscreen%,32000
+  BMOVE graphbuffer%,logicalscreen%,32000
+  ARRAYFILL xput&(),512
+  ARRAYFILL yput&(),192
+  DO UNTIL ASC(INKEY$)=32
+    time%=TIMER
+    FOR angle&=0 TO 359 STEP 1
+      VSYNC
+      '
+      ' *** BMOVE of 32 scanlines is faster ***
+      BMOVE graphbuffer%+28480,bufferscreen%+28480,2560
+      '
+      ' *** Cleanup old  sprites. Fixed pattern means only 1 to cleanup ***
+      cleanup%=MUL(yput&(23),80)
+      BMOVE graphbuffer%+cleanup%,bufferscreen%+cleanup%,1280
+      '
+      ' *** Write new coordinates ***
+      INSERT xput&(0)=312+200*COSQ(4*angle&)
+      INSERT yput&(0)=192-110*SINQ(3*angle&)
+      '
+      ' *** Set BLT destination for all sprites to current writescreen ***
+      blt_biglogo%(14)=bufferscreen% ! This number changes after every @swap
+      blt_logo%(14)=bufferscreen%    ! So i have to set inside the loop
+      blt_s%(14)=bufferscreen%
+      blt_t%(14)=bufferscreen%
+      blt_n%(14)=bufferscreen%
+      blt_o%(14)=bufferscreen%
+      blt_a%(14)=bufferscreen%
+      blt_l%(14)=bufferscreen%
+      blt_g%(14)=bufferscreen%
+      blt_i%(14)=bufferscreen%
+      blt_mask%(14)=bufferscreen%
+      '
+      ' *** draw masks ***
+      FOR mask&=0 TO 22 STEP 2
+        blt_mask%(12)=xput&(mask&)
+        blt_mask%(13)=yput&(mask&)
+        BITBLT blt_mask%()
+      NEXT mask&
+      '
+      ' ***   Draw sprites in reverse order: aiglatsonts<logo>    ***
+      ' ***  Each sprite needs the 2 new destination coordinates  ***
+      blt_a%(12)=xput&(22)
+      blt_a%(13)=yput&(22)
+      BITBLT blt_a%()
+      '
+      blt_i%(12)=xput&(20)
+      blt_i%(13)=yput&(20)
+      BITBLT blt_i%()
+      '
+      blt_g%(12)=xput&(18)
+      blt_g%(13)=yput&(18)
+      BITBLT blt_g%()
+      '
+      blt_l%(12)=xput&(16)
+      blt_l%(13)=yput&(16)
+      BITBLT blt_l%()
+      '
+      blt_a%(12)=xput&(14)
+      blt_a%(13)=yput&(14)
+      BITBLT blt_a%()
+      '
+      blt_t%(12)=xput&(12)
+      blt_t%(13)=yput&(12)
+      BITBLT blt_t%()
+      '
+      blt_s%(12)=xput&(10)
+      blt_s%(13)=yput&(10)
+      BITBLT blt_s%()
+      '
+      blt_o%(12)=xput&(8)
+      blt_o%(13)=yput&(8)
+      BITBLT blt_o%()
+      '
+      blt_n%(12)=xput&(6)
+      blt_n%(13)=yput&(6)
+      BITBLT blt_n%()
+      '
+      blt_t%(12)=xput&(4)
+      blt_t%(13)=yput&(4)
+      BITBLT blt_t%()
+      '
+      blt_s%(12)=xput&(2)
+      blt_s%(13)=yput&(2)
+      BITBLT blt_s%()
+      '
+      blt_logo%(12)=xput&(0)
+      blt_logo%(13)=yput&(0)
+      BITBLT blt_logo%()
+      '
+      blt_biglogo%(12)=272-200*COSQ(MUL(angle&,2))
+      BITBLT blt_biglogo%()
+      @swap
+    NEXT angle&
+    secs=SUB(TIMER,time%)/200
+  LOOP
+  '
+  ' *** With Line-A I need a lot more and bigger Arrays ***
+  ' *** But I reduced the numer of variable R/W actions ***
+  ' *** 11 (destscr) + 12*2 (masks) + 12*2 +1 (sprites) ***
+  ' *** So total of 60 variable R/W                     ***
+  '
+  BMOVE graphbuffer%+28480,bufferscreen%+28480,2560
+  BMOVE graphbuffer%+28480,logicalscreen%+28480,2560
+  FOR endstep&=0 TO 22
+    '
+    ' *** Cleanup old  sprites ***
+    cleanup%=MUL(yput&(23),80)
+    BMOVE graphbuffer%+cleanup%,bufferscreen%+cleanup%,1280
+    '
+    INSERT xput&(0)=512
+    INSERT yput&(0)=192
+    '
+    ' *** Set BLT destination for all sprites to current writescreen ***
+    blt_logo%(14)=bufferscreen%
+    blt_s%(14)=bufferscreen%
+    blt_t%(14)=bufferscreen%
+    blt_n%(14)=bufferscreen%
+    blt_o%(14)=bufferscreen%
+    blt_a%(14)=bufferscreen%
+    blt_l%(14)=bufferscreen%
+    blt_g%(14)=bufferscreen%
+    blt_i%(14)=bufferscreen%
+    blt_mask%(14)=bufferscreen%
+    '
+    ' *** draw masks ***
+    FOR mask&=0 TO 22 STEP 2
+      blt_mask%(12)=xput&(mask&)
+      blt_mask%(13)=yput&(mask&)
+      BITBLT blt_mask%()
+    NEXT mask&
+    '
+    ' ***   Draw sprites in reverse order: aiglatsonts<logo>    ***
+    ' ***  Each sprite needs the 2 new destination coordinates  ***
+    ' *** Using separate arrays for every sprite means I write  ***
+    ' *** 2 coordinates per sprite inside the loop.             ***
+    ' *** But: 12*2=24 extra R/W each loop compared to RC_COPY  ***
+    blt_a%(12)=xput&(22)
+    blt_a%(13)=yput&(22)
+    BITBLT blt_a%()
+    '
+    blt_i%(12)=xput&(20)
+    blt_i%(13)=yput&(20)
+    BITBLT blt_i%()
+    '
+    blt_g%(12)=xput&(18)
+    blt_g%(13)=yput&(18)
+    BITBLT blt_g%()
+    '
+    blt_l%(12)=xput&(16)
+    blt_l%(13)=yput&(16)
+    BITBLT blt_l%()
+    '
+    blt_a%(12)=xput&(14)
+    blt_a%(13)=yput&(14)
+    BITBLT blt_a%()
+    '
+    blt_t%(12)=xput&(12)
+    blt_t%(13)=yput&(12)
+    BITBLT blt_t%()
+    '
+    blt_s%(12)=xput&(10)
+    blt_s%(13)=yput&(10)
+    BITBLT blt_s%()
+    '
+    blt_o%(12)=xput&(8)
+    blt_o%(13)=yput&(8)
+    BITBLT blt_o%()
+    '
+    blt_n%(12)=xput&(6)
+    blt_n%(13)=yput&(6)
+    BITBLT blt_n%()
+    '
+    blt_t%(12)=xput&(4)
+    blt_t%(13)=yput&(4)
+    BITBLT blt_t%()
+    '
+    blt_s%(12)=xput&(2)
+    blt_s%(13)=yput&(2)
+    BITBLT blt_s%()
+    '
+    blt_logo%(12)=xput&(0)
+    blt_logo%(13)=yput&(0)
+    BITBLT blt_logo%()
+    '
+    @swap
+  NEXT endstep&
+RETURN
+'
+' ***        BMOVE TRANSITIONS        ***
+'
+> PROCEDURE rolldowntransition(wipescreen%)
+  FOR w%=1 TO 39
+    BMOVE logicalscreen%,logicalscreen%+160,80*w%
+    BMOVE wipescreen%+80*(w%+w%+1),logicalscreen%+80,80
+    BMOVE wipescreen%+80*(w%+w%+2),logicalscreen%,80
+  NEXT w%
+  FOR w%=0 TO 319
+    BMOVE logicalscreen%+(80*w%),logicalscreen%+(80*w%)+160,3200
+    BMOVE wipescreen%+80*w%,logicalscreen%+80*w%,80
+    BMOVE wipescreen%+80*w%+3280,logicalscreen%+80*w%+80,80
+  NEXT w%
+  FOR w%=40 DOWNTO 1
+    BMOVE logicalscreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%-1),w%*80
+    BMOVE wipescreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%+1),160
+  NEXT w%
+RETURN
+> PROCEDURE uncovertransition(wipescreen%)
+  FOR w%=0 TO 16000 STEP 160
+    BMOVE wipescreen%,logicalscreen%+16000-w%,w%
+    BMOVE wipescreen%+32000-w%,logicalscreen%+16000,w%
+  NEXT w%
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  '   $m256000 ! memory need for the program 2 be compiled - OR RESERVE...
+  ' $I- ! disable interrupt routine  -  $I+{ would enable them
+  ' $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 256000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=bufferscreen%                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(65000) ! Create memory buffer
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  freemem%=FRE(0)
+  ~MFREE(predrawbuffer%)  ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)    ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  PRINT AT(35,12);"THE END..."
+  PRINT AT(37,14);secs
+  ~INP(2)
+  CLS
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+  logicalscreen%=physicalscreen%
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1)
+RETURN
