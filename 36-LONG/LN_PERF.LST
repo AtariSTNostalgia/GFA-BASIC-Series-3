@@ -1,0 +1,383 @@
+'
+' *** INITIALIZATION AND PREPARATIONS ***
+@generalpreps
+@programpreps
+@blitpreps
+@bufferscreen
+@predraw
+'
+' ***          MAIN PROGRAM           ***
+@defaultscreen
+@16pxblit
+@32pxblit
+@cardlong
+@bigblt
+@bmove
+'
+' ***     END ACTIONS AND CLEANUP     ***
+@printresults
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  '
+  ' ** Arrays to store X/Y coordinates **
+  '
+  ' ** Arrays to store parameters for BITBLT **
+  ' => All done in @blitpreps procedure
+  '
+  ' ** Set address for spritebuffer **
+  spritebuffer%=graphbuffer%+32000
+  '
+  ' *** Anything to do before switching screens ***
+  CLS
+  PRINT AT(33,5);"Please wait..."
+RETURN
+> PROCEDURE blitpreps
+  ' ** Create and parameter array for Line-A BITBLT: blt_logo% **
+  ' ** Arr%(12) and (13) set from routine (dest X/Y coord) **
+  DIM blt_logo%(100)
+  blt_logo%(0)=16              ! Object Width
+  blt_logo%(1)=16              ! Height
+  blt_logo%(2)=1
+  blt_logo%(3)=1
+  blt_logo%(4)=0
+  blt_logo%(5)=&H7070707       ! Putmode => &H7070707 for 7
+  blt_logo%(6)=0               ! SOURCE X
+  blt_logo%(7)=0               ! SOURCE Y
+  blt_logo%(8)=spritebuffer%
+  blt_logo%(9)=2
+  blt_logo%(10)=80
+  blt_logo%(11)=2
+  blt_logo%(14)=logicalscreen%
+  blt_logo%(15)=2
+  blt_logo%(16)=80
+  blt_logo%(17)=2
+  blt_logo%(18)=0
+  blt_logo%(19)=0
+  blt_logo%(20)=0
+  blt_logo%(21)=0
+  '
+  ' Word aligned 32x16 logo
+  DIM blt_logo32%(100)
+  blt_logo32%(0)=32              ! Object Width
+  blt_logo32%(1)=16              ! Height
+  blt_logo32%(2)=1
+  blt_logo32%(3)=1
+  blt_logo32%(4)=0
+  blt_logo32%(5)=&H7070707
+  blt_logo32%(6)=0               ! SOURCE X
+  blt_logo32%(7)=0               ! SOURCE Y
+  blt_logo32%(8)=spritebuffer%
+  blt_logo32%(9)=2
+  blt_logo32%(10)=80
+  blt_logo32%(11)=2
+  blt_logo32%(14)=logicalscreen%
+  blt_logo32%(15)=2
+  blt_logo32%(16)=80
+  blt_logo32%(17)=2
+  blt_logo32%(18)=0
+  blt_logo32%(19)=0
+  blt_logo32%(20)=0
+  blt_logo32%(21)=0
+  '
+  ' Word aligned big logo
+  DIM big_logo%(100)
+  big_logo%(0)=112             ! Object Width
+  big_logo%(1)=32              ! Height
+  big_logo%(2)=1
+  big_logo%(3)=1
+  big_logo%(4)=0
+  big_logo%(5)=&H7070707
+  big_logo%(6)=208             ! SOURCE X
+  big_logo%(7)=0               ! SOURCE Y
+  big_logo%(8)=spritebuffer%
+  big_logo%(9)=2
+  big_logo%(10)=80
+  big_logo%(11)=2
+  big_logo%(14)=logicalscreen%
+  big_logo%(15)=2
+  big_logo%(16)=80
+  big_logo%(17)=2
+  big_logo%(18)=0
+  big_logo%(19)=0
+  big_logo%(20)=0
+  big_logo%(21)=0
+RETURN
+> PROCEDURE predraw
+  GRAPHMODE 2
+  '
+  ' ** Draw big logo **
+  CLS
+  DEFFILL 1,1,0
+  PRBOX 208,0,295,31
+  DEFTEXT 0,0,0,26
+  TEXT 212,28,"ASN"
+  '
+  ' ** Draw sprites **
+  GRAPHMODE 1
+  PRBOX 0,0,15,15
+  DEFTEXT 0,0,0,6
+  GRAPHMODE 2
+  TEXT 1,10,""
+  PLOT 15,10
+  '
+  ' ** Move all sprites to spritebuffer and return to default graphmode  **
+  GRAPHMODE 1
+  BMOVE bufferscreen%,spritebuffer%,2560
+RETURN
+> PROCEDURE 16pxblit
+  '
+  ' ** Word-aligned blit of 16x16 pixel sprite **
+  CLS
+  blt_logo%(12)=320
+  blt_logo%(13)=192
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BITBLT blt_logo%()
+  NEXT i&
+  aligned16=SUB(TIMER,time%)/200
+  '
+  ' ** 7 pixel shifted blit of 16x16 pixel sprite **
+  CLS
+  blt_logo%(12)=326
+  blt_logo%(13)=192
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BITBLT blt_logo%()
+  NEXT i&
+  shifted=SUB(TIMER,time%)/200
+RETURN
+> PROCEDURE 32pxblit
+  '
+  ' ** Word-aligned LA-blit of 32x16 pixel sprite **
+  CLS
+  blt_logo32%(12)=320
+  blt_logo32%(13)=192
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BITBLT blt_logo32%()
+  NEXT i&
+  aligned32=SUB(TIMER,time%)/200
+  '
+  ' ** Word-aligned RC_COPY of 32x16 pixel sprite **
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    RC_COPY spritebuffer%,0,0,32,16 TO logicalscreen%,320,192,7
+  NEXT i&
+  rcc32=SUB(TIMER,time%)/200
+RETURN
+> PROCEDURE cardlong
+  CLS
+  '
+  ' ** 16x16 Sprite copied by 16 word-aligned CARD{} listing **
+  src_start%=spritebuffer%
+  dest_start%=logicalscreen%+MUL(DIV(336,16),2)+MUL(192,80) ! X/8 plus Y*80
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    FOR cardshift%=0 TO 1200 STEP 80
+      CARD{dest_start%+cardshift%}=OR(CARD{src_start%+cardshift%},CARD{dest_start%+cardshift%})
+    NEXT cardshift%
+  NEXT i&
+  card16=SUB(TIMER,time%)/200
+  CLS
+  '
+  ' ** 32x16 Sprite copied by 16 word-aligned LONG{} listing **
+  src_start%=spritebuffer%
+  dest_start%=logicalscreen%+MUL(DIV(336,16),2)+MUL(192,80) ! X/8 plus Y*80
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    FOR cardshift%=0 TO 1200 STEP 80
+      LONG{dest_start%+cardshift%}=OR(LONG{src_start%+cardshift%},LONG{dest_start%+cardshift%})
+    NEXT cardshift%
+  NEXT i&
+  long32=SUB(TIMER,time%)/200
+RETURN
+> PROCEDURE bmove
+  '
+  ' ** 16 line BMOVE **
+  CLS
+  bmsrc%=spritebuffer%
+  bmdest%=logicalscreen%+16000
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BMOVE bmsrc%,bmdest%,1280
+  NEXT i&
+  bm16=SUB(TIMER,time%)/200
+  '
+  ' ** 32 line BMOVE **
+  CLS
+  bmsrc%=spritebuffer%
+  bmdest%=logicalscreen%+16000
+  DEFFILL 1,2,4
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BMOVE bmsrc%,bmdest%,2560
+  NEXT i&
+  bm32=SUB(TIMER,time%)/200
+RETURN
+> PROCEDURE bigblt
+  '
+  ' ** Word-aligned LA-blit of 112x32 pixel sprite **
+  CLS
+  big_logo%(0)=112
+  big_logo%(12)=320
+  big_logo%(13)=192
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BITBLT big_logo%()
+  NEXT i&
+  bigal=SUB(TIMER,time%)/200
+  '
+  ' ** Shifted LA-blit of 96x32 pixel sprite **
+  CLS
+  big_logo%(0)=96
+  big_logo%(12)=327
+  big_logo%(13)=192
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    BITBLT big_logo%()
+  NEXT i&
+  bigshft=SUB(TIMER,time%)/200
+  '
+  ' ** Sprite copied by  3*32 LONG{} and 32 CARD{} listing **
+  src_start%=spritebuffer%+26
+  dest_start%=logicalscreen%+MUL(DIV(336,16),2)+MUL(192,80) ! X/8 plus Y*80
+  DEFFILL 1,2,1
+  PBOX 0,0,639,399
+  time%=TIMER
+  FOR i&=0 TO 4999
+    FOR cardshift%=0 TO 2480 STEP 80
+      src%=src_start%+cardshift%
+      dst%=dest_start%+cardshift%
+      {dst%}=OR({src%},{dst%})
+      {dst%+4}=OR({src%+4},{dst%+4})
+      {dst%+8}=OR({src%+8},{dst%+8})
+      CARD{dst%+12}=OR(CARD{src%+12},CARD{dst%+12})
+    NEXT cardshift%
+  NEXT i&
+  big32=SUB(TIMER,time%)/200
+RETURN
+> PROCEDURE printresults
+  CLS
+  PRINT "5000 Shifted 16x16 pixel sprite:",shifted
+  PRINT "5000 Aligned 16x16 pixel sprite:",aligned16
+  PRINT ""
+  PRINT "5000 Aligned 32x16 pixel sprite (BLT):",aligned32
+  PRINT "5000 Aligned 32x16 pixel sprite (RCC):",rcc32
+  PRINT ""
+  PRINT "5000 Aligned 16x16 CARD listing:",card16
+  PRINT "5000 Aligned 32x16 LONG listing:",long32
+  PRINT ""
+  '
+  PRINT "5000 Shifted 96x32 pixel sprite (BLT):",bigshft
+  PRINT "5000 Aligned 112x32 pixel sprite (BLT):",bigal
+  PRINT ;"5000 Aligned 112x32 3LONG/1CARD :",big32
+  PRINT ""
+  PRINT "5000 BMOVE of 16 lines (1280 BYTES):",bm16
+  PRINT "5000 BMOVE of 32 lines (2560 BYTES):",bm32
+  ~INP(2)
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  $m128000 ! memory need for the program 2 be compiled - OR RESERVE...
+  $I- ! disable interrupt routine  -  $I+{ would enable them
+  $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 256000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(65000) ! Create memory buffer
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  freemem%=FRE(0)
+  ~MFREE(predrawbuffer%)  ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)    ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  CLS
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default logical screen ***
+  ~XBIOS(5,L:logicalscreen%,L:physicalscreen%,-1)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
