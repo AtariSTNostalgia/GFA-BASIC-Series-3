@@ -1,0 +1,1050 @@
+' This is the Bye bye mono0chrom demo to conclude the monochrome
+' part of my GFA basic tour series 3. Most of the code is commented to
+' explain what is does. You will find them inside all prodecures.
+' Feel free to copy, re-use, distribute, or enhace the code in
+' which-ever way you like.
+'
+' ** INITIALIZATION, PREPARATIONS AND START PLAYING MUSIC **
+@rezcheck               ! Check for high-rez monochrome
+@generalpreps
+@musicpreps
+@programpreps
+@music
+'
+' ** CALL PROCEDURES FOR PART 1 **
+@p1_preps
+@bufferscreen
+@p1_predraw
+@p1_precalcs
+'
+@defaultscreen
+@rolldowntransition(graphbuffer%)
+@bufferscreen
+LPOKE XBIOS(14,1)+6,0  ! Clear multiple space bar presses from keyboard buffer
+@p1_animate
+'
+@p1_endsequence
+@uncovertransition(graphbuffer%,logicalscreen%)
+@p1_cleanup
+'
+' ** CALL PROCEDURES FOR PART 2 **
+'
+@p2_preps
+@resetscreens
+@bufferscreen
+@p2_predraw
+@p2_predrawtext
+LPOKE XBIOS(14,1)+6,0
+@p2_scroll_start
+@p2_scroll_stage2
+@p2_scroll_stage3
+@p2_endsequence
+@uncovertransition(physicalscreen%,cyclescreen%)
+'
+' ** CALL PROCEDURES FOR PART 3 **
+@p3_preps
+@resetscreens
+@bufferscreen
+@p3_predrawprlx
+@p3_predrawspr
+@p3_predrawtext
+@p3_precalc
+LPOKE XBIOS(14,1)+6,0
+@p3_loop_backgr
+@p3_loop_spr
+@p3_loop_scroll
+@p3_endsequence
+@uncovertransition(physicalscreen%,playscreen%)
+'
+' ***     CALL PROCEDURES FOR END ACTIONS AND CLEANUP     ***
+@endsequence
+@endmusic
+@generalcleanup
+'
+' ***       PROGRAM PROCEDURES        ***
+'
+' ** PRE/POST **
+> PROCEDURE rezcheck
+  rez&=XBIOS(4)
+  IF rez&<>2
+    PRINT ""
+    PRINT "This program must be run in monochrome mode..."
+    PAUSE 100
+    END
+  ENDIF
+RETURN
+> PROCEDURE programpreps
+  ' *** Preparations specific for this program ***
+  '
+  ' *** Anything to do before switching screens ***
+  '
+  SETCOLOR 0,0   ! Make background black instead of white
+  CLS
+  PRINT AT(33,5);"Please wait..."
+RETURN
+> PROCEDURE endsequence
+  '
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+  PRINT AT(35,12);"THE END..."
+  PAUSE 250
+RETURN
+> PROCEDURE checkscrollscreen
+  ' ** Not used in demo. But usefull to check pre-shifted screen data **
+  scroll%=0
+  REPEAT
+    IF scroll%>500000
+      scroll%=0
+    ENDIF
+    VSYNC
+    ~XBIOS(5,L:-1,L:cyclescreen%+scroll%,-1)
+    ~INP(2)
+    ADD scroll%,32000
+  UNTIL ASC(INKEY$)=27
+RETURN
+'
+' ** MUSIC PLAYER **
+PROCEDURE musicpreps
+  DIM r%(16)
+  INLINE sndhplay%,186
+  INLINE sndhtune%,18906
+  '
+  ' Address of the zik
+  r%(14)=sndhtune%
+  '
+  ' **      For smooth emulation and capturing, vsync emulator to 60Hz      **
+  ' ** This slows emulated machine down 20%. Play song faster to compensate **
+  ' Frequency
+  r%(7)=50
+  '
+RETURN
+> PROCEDURE music
+  ' SNDH Replayer for GFA
+  ' Original by Swe/YesCrew
+  ' Modified version by gwEm
+  '
+  RCALL sndhplay%+28,r%()
+RETURN
+> PROCEDURE endmusic
+  RCALL sndhplay%+28+4,r%()
+RETURN
+'
+' ** PART 1 **
+> PROCEDURE p1_cleanup
+  ' ** Clear all arrays when they are not needed anymore **
+  ERASE dest_xy%(),src_y%(),cln_xy%(),dest_xy_precalc%(),src_y_precalc%(),cln_xy_precalc%(),biglogo_s_precalc%(),biglogo_d_precalc%()
+RETURN
+> PROCEDURE p1_preps
+  ' *** Preparations specific for this program ***
+  spritebuffer%=graphbuffer%+32000
+  '
+  ' *** Prepare Array to hold WORD-aligned BYTE addresses for XY coordinates ***
+  DIM dest_xy%(23)       ! Array to read bytes for small sprite coordinates
+  DIM src_y%(23)         ! Array to read byte for source y-coordinate
+  DIM cln_xy%(23)        ! Array to read cleanup source byte from
+  '
+  DIM dest_xy_precalc%(359)   ! Array with pre-calculated destination X/Y
+  DIM src_y_precalc%(359)
+  DIM cln_xy_precalc%(359)
+  DIM biglogo_s_precalc%(359)
+  DIM biglogo_d_precalc%(359)
+  '
+  ' *** Anything to do before switching screens ***
+  CLS
+  SETCOLOR 0,0
+  PRINT AT(33,5);"Please wait..."
+RETURN
+> PROCEDURE p1_precalcs
+  ' ** Precalcutate all array values like in part 36b video on my channel **
+  FOR angle&=0 TO 359
+    xbyte%=MUL(DIV(312+200*COSQ(4*angle&),16),2)
+    ybyte%=MUL(192-110*SINQ(3*angle&),80)
+    src_y_shift%=MUL(MOD(312+200*COSQ(4*angle&),16),2560)
+    '
+    dest_xy_precalc%(angle&)=xbyte%+ybyte%
+    '
+    src_y_precalc%(angle&)=spritebuffer%+src_y_shift%
+    '
+    cln_xy_precalc%(angle&)=graphbuffer%+xbyte%+ybyte%
+    biglogo_s_precalc%(angle&)=50+spritebuffer%+MUL(MOD(264-220*COSQ(2*angle&),16),2560)
+    biglogo_d_precalc%(angle&)=29360+MUL(DIV(264-220*COSQ(2*angle&),16),2)
+  NEXT angle&
+RETURN
+> PROCEDURE p1_predraw
+  '
+  ' ** Make sure whole graphbuffer is cleared (GFA does not cleanup properly) **
+  CLS
+  FOR cleansheet%=0 TO 608000 STEP 32000
+    BMOVE bufferscreen%,graphbuffer%+cleansheet%,32000
+  NEXT cleansheet%
+  '
+  ' ** Draw canvas **
+  GRAPHMODE 1
+  CLS
+  DEFFILL 1,4,1
+  PBOX -1,-1,640,400
+  DEFFILL 1,2,2
+  PRBOX 40,60,600,340
+  DEFFILL 0
+  PRBOX 120,130,520,270
+  DEFFILL 0
+  PBOX 120,16,519,46
+  PBOX -1,367,640,400
+  DEFTEXT 1,0,0,26
+  GRAPHMODE 2
+  TEXT 129,43," ATARI ST NOSTALGIA "
+  TEXT 0,394,"  IT ALL STARTED WITH A SPRITE ROUTINE  "
+  BMOVE bufferscreen%,graphbuffer%,32000
+  '
+  ' *** Draw sprites ***
+  CLS
+  GRAPHMODE 1
+  DEFFILL 1,0
+  FOR i|=0 TO 18 STEP 2
+    PRBOX (i|*16),0,(i|*16)+15,15
+  NEXT i|
+  DEFTEXT 1,0,0,6
+  GRAPHMODE 2
+  TEXT 1,10,""
+  PLOT 15,10
+  DEFTEXT 1,1,0,6
+  TEXT 35,11,"S"
+  TEXT 67,11,"T"
+  TEXT 99,11,"N"
+  TEXT 131,11,"O"
+  TEXT 164,11,"L"
+  TEXT 195,11,"G"
+  TEXT 227,11,"I"
+  TEXT 259,11,"A"
+  TEXT 291,11,"R"
+  ' ** Draw mask **
+  DEFFILL 1,1
+  PRBOX 320,0,335,15
+  GRAPHMODE 1
+  PBOX 0,160,31,175
+  '
+  ' ** Draw big box **
+  PRBOX 400,0,511,31
+  '
+  ' **Copy 16 shifts of spites to spritebuffer% **
+  FOR shift&=0 TO 15
+    RC_COPY bufferscreen%,0,0,512,32 TO spritebuffer%,shift&,MUL(shift&,32),3
+    RC_COPY bufferscreen%,0,160,32,16 TO spritebuffer%,320,MUL(shift&,32),6
+  NEXT shift&
+RETURN
+> PROCEDURE p1_endsequence
+  @defaultscreen
+  logicalscreen%=physicalscreen%
+  BMOVE graphbuffer%,logicalscreen%,32000 ! Place background canvas in screen
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+PROCEDURE p1_animate
+  ' ** Sprite routine from part 36b video on my channel **
+  BMOVE graphbuffer%,bufferscreen%,32000
+  BMOVE graphbuffer%,logicalscreen%,32000
+  PAUSE 230  ! *** Pause to start sprites in sync with music (sort of) ***
+  ARRAYFILL dest_xy%(),graphbuffer%+43520
+  ARRAYFILL cln_xy%(),graphbuffer%+64+15360
+  ARRAYFILL src_y%(),0
+  REPEAT
+    FOR angle&=0 TO 359 STEP 1
+      VSYNC
+      ' ** cleanup bottom **
+      BMOVE graphbuffer%+29360,bufferscreen%+29360,2560
+      '
+      ' ** Cleanup old  sprites. Fixed pattern means only 1 to cleanup **
+      ' **           16 LONG{} is faster than 16 lines BMOVE           **
+      FOR spriteline%=0 TO 1200 STEP 80
+        {ADD(dest_xy%(23),spriteline%)}={ADD(cln_xy%(23),spriteline%)}
+      NEXT spriteline%
+      '
+      ' *** Write byte values for new coordinates ***
+      INSERT dest_xy%(0)=bufferscreen%+dest_xy_precalc%(angle&)
+      INSERT cln_xy%(0)=cln_xy_precalc%(angle&)
+      INSERT src_y%(0)=src_y_precalc%(angle&)
+      '
+      ' *** Draw masks and prites in one loop = less calculations ***
+      FOR spriteline%=0 TO 1200 STEP 80
+        ' A
+        sprite%=ADD(dest_xy%(22),spriteline%)
+        {sprite%}=AND({40+src_y%(22)+spriteline%},{sprite%})
+        {sprite%}=OR({32+src_y%(22)+spriteline%},{sprite%})
+        ' I
+        sprite%=ADD(dest_xy%(20),spriteline%)
+        {sprite%}=AND({40+src_y%(20)+spriteline%},{sprite%})
+        {sprite%}=OR({28+src_y%(20)+spriteline%},{sprite%})
+        ' G
+        sprite%=ADD(dest_xy%(18),spriteline%)
+        {sprite%}=AND({40+src_y%(18)+spriteline%},{sprite%})
+        {sprite%}=OR({24+src_y%(18)+spriteline%},{sprite%})
+        ' L
+        sprite%=ADD(dest_xy%(16),spriteline%)
+        {sprite%}=AND({40+src_y%(16)+spriteline%},{sprite%})
+        {sprite%}=OR({20+src_y%(16)+spriteline%},{sprite%})
+        ' A
+        sprite%=ADD(dest_xy%(14),spriteline%)
+        {sprite%}=AND({40+src_y%(14)+spriteline%},{sprite%})
+        {sprite%}=OR({32+src_y%(14)+spriteline%},{sprite%})
+        ' T
+        sprite%=ADD(dest_xy%(12),spriteline%)
+        {sprite%}=AND({40+src_y%(12)+spriteline%},{sprite%})
+        {sprite%}=OR({8+src_y%(12)+spriteline%},{sprite%})
+        ' S
+        sprite%=ADD(dest_xy%(10),spriteline%)
+        {sprite%}=AND({40+src_y%(10)+spriteline%},{sprite%})
+        {sprite%}=OR({4+src_y%(10)+spriteline%},{sprite%})
+        ' O
+        sprite%=ADD(dest_xy%(8),spriteline%)
+        {sprite%}=AND({40+src_y%(8)+spriteline%},{sprite%})
+        {sprite%}=OR({16+src_y%(8)+spriteline%},{sprite%})
+        ' N
+        sprite%=ADD(dest_xy%(6),spriteline%)
+        {sprite%}=AND({40+src_y%(6)+spriteline%},{sprite%})
+        {sprite%}=OR({12+src_y%(6)+spriteline%},{sprite%})
+        ' T
+        sprite%=ADD(dest_xy%(4),spriteline%)
+        {sprite%}=AND({40+src_y%(4)+spriteline%},{sprite%})
+        {sprite%}=OR({8+src_y%(4)+spriteline%},{sprite%})
+        ' S
+        sprite%=ADD(dest_xy%(2),spriteline%)
+        {sprite%}=AND({40+src_y%(2)+spriteline%},{sprite%})
+        {sprite%}=OR({4+src_y%(2)+spriteline%},{sprite%})
+        ' LOGO
+        sprite%=ADD(dest_xy%(0),spriteline%)
+        {sprite%}=AND({40+src_y%(0)+spriteline%},{sprite%})
+        {sprite%}=OR({src_y%(0)+spriteline%},{sprite%})
+      NEXT spriteline%
+      '
+      ' ** Big logo bottom **
+      dstscreen%=bufferscreen%+biglogo_d_precalc%(angle&)
+      FOR spriteline%=0 TO 2480 STEP 80
+        src%=biglogo_s_precalc%(angle&)+spriteline%
+        dst%=dstscreen%+spriteline%
+        {dst%}=XOR({src%},{dst%})
+        {dst%+4}=XOR({src%+4},{dst%+4})
+        {dst%+8}=XOR({src%+8},{dst%+8})
+        {dst%+12}=XOR({src%+12},{dst%+12})
+      NEXT spriteline%
+      @swap
+    NEXT angle&
+  UNTIL ASC(INKEY$)=32
+  BMOVE graphbuffer%+29360,bufferscreen%+29360,2560
+  BMOVE graphbuffer%+29360,logicalscreen%+29360,2560
+  ' ============================================================
+  FOR endstep&=0 TO 22
+    VSYNC
+    ' ** Cleanup **
+    FOR spriteline%=0 TO 1200 STEP 80
+      {ADD(dest_xy%(23),spriteline%)}={ADD(cln_xy%(23),spriteline%)}
+    NEXT spriteline%
+    '
+    ' ** Write coordinates **
+    INSERT dest_xy%(0)=graphbuffer%+43520
+    INSERT cln_xy%(0)=graphbuffer%+64+15360
+    INSERT src_y%(0)=0
+    '
+    ' *** Draw masks and prites in one loop = less calculations ***
+    FOR spriteline%=0 TO 1200 STEP 80
+      ' A
+      sprite%=ADD(dest_xy%(22),spriteline%)
+      {sprite%}=AND({40+src_y%(22)+spriteline%},{sprite%})
+      {sprite%}=OR({32+src_y%(22)+spriteline%},{sprite%})
+      ' I
+      sprite%=ADD(dest_xy%(20),spriteline%)
+      {sprite%}=AND({40+src_y%(20)+spriteline%},{sprite%})
+      {sprite%}=OR({28+src_y%(20)+spriteline%},{sprite%})
+      ' G
+      sprite%=ADD(dest_xy%(18),spriteline%)
+      {sprite%}=AND({40+src_y%(18)+spriteline%},{sprite%})
+      {sprite%}=OR({24+src_y%(18)+spriteline%},{sprite%})
+      ' L
+      sprite%=ADD(dest_xy%(16),spriteline%)
+      {sprite%}=AND({40+src_y%(16)+spriteline%},{sprite%})
+      {sprite%}=OR({20+src_y%(16)+spriteline%},{sprite%})
+      ' A
+      sprite%=ADD(dest_xy%(14),spriteline%)
+      {sprite%}=AND({40+src_y%(14)+spriteline%},{sprite%})
+      {sprite%}=OR({32+src_y%(14)+spriteline%},{sprite%})
+      ' T
+      sprite%=ADD(dest_xy%(12),spriteline%)
+      {sprite%}=AND({40+src_y%(12)+spriteline%},{sprite%})
+      {sprite%}=OR({8+src_y%(12)+spriteline%},{sprite%})
+      ' S
+      sprite%=ADD(dest_xy%(10),spriteline%)
+      {sprite%}=AND({40+src_y%(10)+spriteline%},{sprite%})
+      {sprite%}=OR({4+src_y%(10)+spriteline%},{sprite%})
+      ' O
+      sprite%=ADD(dest_xy%(8),spriteline%)
+      {sprite%}=AND({40+src_y%(8)+spriteline%},{sprite%})
+      {sprite%}=OR({16+src_y%(8)+spriteline%},{sprite%})
+      ' N
+      sprite%=ADD(dest_xy%(6),spriteline%)
+      {sprite%}=AND({40+src_y%(6)+spriteline%},{sprite%})
+      {sprite%}=OR({12+src_y%(6)+spriteline%},{sprite%})
+      ' T
+      sprite%=ADD(dest_xy%(4),spriteline%)
+      {sprite%}=AND({40+src_y%(4)+spriteline%},{sprite%})
+      {sprite%}=OR({8+src_y%(4)+spriteline%},{sprite%})
+      ' S
+      sprite%=ADD(dest_xy%(2),spriteline%)
+      {sprite%}=AND({40+src_y%(2)+spriteline%},{sprite%})
+      {sprite%}=OR({4+src_y%(2)+spriteline%},{sprite%})
+      ' LOGO
+      sprite%=ADD(dest_xy%(0),spriteline%)
+      {sprite%}=AND({40+src_y%(0)+spriteline%},{sprite%})
+      {sprite%}=OR({src_y%(0)+spriteline%},{sprite%})
+    NEXT spriteline%
+    @swap
+  NEXT endstep&
+RETURN
+'
+' ***        BMOVE TRANSITIONS        ***
+'
+> PROCEDURE rolldowntransition(wipescreen%)
+  FOR w%=1 TO 39
+    BMOVE logicalscreen%,logicalscreen%+160,80*w%
+    BMOVE wipescreen%+80*(w%+w%+1),logicalscreen%+80,80
+    BMOVE wipescreen%+80*(w%+w%+2),logicalscreen%,80
+  NEXT w%
+  FOR w%=0 TO 319
+    BMOVE logicalscreen%+(80*w%),logicalscreen%+(80*w%)+160,3200
+    BMOVE wipescreen%+80*w%,logicalscreen%+80*w%,80
+    BMOVE wipescreen%+80*w%+3280,logicalscreen%+80*w%+80,80
+  NEXT w%
+  FOR w%=40 DOWNTO 1
+    BMOVE logicalscreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%-1),w%*80
+    BMOVE wipescreen%+32000-80*(w%+w%+1),logicalscreen%+32000-80*(w%+w%+1),160
+  NEXT w%
+RETURN
+> PROCEDURE uncovertransition(wipescreen%,destscreen%)
+  FOR w%=0 TO 16000 STEP 160
+    BMOVE wipescreen%,destscreen%+16000-w%,w%
+    BMOVE wipescreen%+32000-w%,destscreen%+16000,w%
+  NEXT w%
+RETURN
+'
+' ** PART 2 **
+> PROCEDURE p2_preps
+  PRINT AT(31,12);"PREPARING NEXT PART"
+  cyclescreen%=(graphbuffer%+255) AND &HFFFFFF00 ! Base address from scroll
+  scrollscreen%=cyclescreen%+256000 ! Base address fro pre-rendered scroll text
+  spritebuffer%=scrollscreen%+96000 ! Not used. No CPU time left for sprites :(
+  scrollrestore%=spritebuffer%+32000 ! Memory allocation for cleanup data
+  '
+  ' ** Precalculate all screen adresses to save CPU time inside the loop **
+  DIM screen_precalc%(99),screen%(8)
+  FOR i&=0 TO 99
+    screen_precalc%(i&)=cyclescreen%+MUL((i& MOD 4),64000)+MUL((i& DIV 4),1280)
+  NEXT i&
+RETURN
+> PROCEDURE p2_predrawtext
+  ' ** Pre-renders all of the scoll text, because I'm lazy **
+  ~XBIOS(5,L:scrollscreen%,L:-1,-1)
+  CLS
+  GRAPHMODE 2
+  DEFTEXT 1,0,0,26
+  TEXT 0,27,"                                        "
+  TEXT 0,59,"  IT STARTED WITH A SPRITE ROUTINE  "
+  TEXT 0,91," .  .  .  .  .  .  .  .  .  .  .  .  .  "
+  TEXT 0,123,"THEN WE ADDED QUITE A LOT OF FANCY STUFF"
+  TEXT 0,155,". . .     LEARNING ABOUT BMOVE, RC_COPY,"
+  TEXT 0,187," BITBLT AND EVEN DIRECTLY WRITING TO RAM"
+  TEXT 0,219," WITH PRE-SHIFTED SPRITES!              "
+  TEXT 0,251,"I ENJOYED MAKING THIS SERIES A LOT SO FA"
+  TEXT 0,283,"R, AND IT MAKES ME WISH I DID MORE CODIN"
+  TEXT 0,315,"G ON THE ST WHEN I WAS YOUNG ;(  ;(  ;( "
+  TEXT 0,347,"    BECAUSE INDEED I DID NOT CODE MUCH T"
+  TEXT 0,379,"HEN...   THAT MAKES THIS VERY SPECIAL:  "
+  '
+  ' **   At end and start of each screen, make sure space is blank   **
+  ' ** to prevent vertical shifting in parts of the text (yes, lazy) **
+  ' **           Every line should beexactly 40 characters           **
+  ~XBIOS(5,L:scrollscreen%+32000,L:-1,-1)
+  TEXT 0,27,"   EVERYTHING I DID SO FAR IN THIS SERIE"
+  TEXT 0,59,"S 3 I HAD NEVER, EVER DONE BEFORE IN MY "
+  TEXT 0,91,"LIFE!     I ALWAYS KNEW GFA WAS A POWERF"
+  TEXT 0,123,"UL LANGUAGE.   BUT CODING THIS STUFF YOU"
+  TEXT 0,155,"RSELF AND SEEING HOW RELATIVELY EASY IT "
+  TEXT 0,187,"IS IMPRESSES ME TO THIS DAY. . . .      "
+  TEXT 0,219,"SO WHERE DO WE GO FROM HERE?  WE LEARNED"
+  TEXT 0,251," A LOT, BUT LIMITED OURSELVES TO MONOCHR"
+  TEXT 0,283,"OME SO FAR.    IN COLOUR THINGS GET A LO"
+  TEXT 0,315,"T MORE COMPLICATED (THANK YOU FOR BITPLA"
+  TEXT 0,347,"NES, ATARI!).    I WANT TO ADD SOME VIDE"
+  TEXT 0,379,"OS TO THIS SERIES 3 ABOUT COLOUR MODES. "
+  '
+  ~XBIOS(5,L:scrollscreen%+64000,L:-1,-1)
+  TEXT 0,27," CONVERTING OUR ROUTINES. . .   I DON'T "
+  TEXT 0,59,"KNOW WHEN THESE VIDEOS WILL BE READY.   "
+  TEXT 0,91,"I HAVE TO FIGURE OUT LOTS OF STUFF MYSEL"
+  TEXT 0,123,"F.  BUT WE WILL SEE WHEN THE TIME COMES."
+  TEXT 0,155,". . .     AFTER THAT, I DON'T KNOW WHAT "
+  TEXT 0,187,"MY NEXT FOCUS WILL BE:      3D?      GEM"
+  TEXT 0,219,"?         WHO KNOWS!       ONLY THE FUTU"
+  TEXT 0,251,"RE CAN TELL.  FOR NOW, ENJOY THIS DEMO. "
+  TEXT 0,283," AND REMEMBER TO DOWNLOAD THE PUBLISHED "
+  TEXT 0,315,"CODE FROM MY GITHUB PAGE AT:            "
+  TEXT 0,347,"GITHUB.COM/ATARISTNOSTALGIA             "
+  TEXT 0,379," TO GO TO THE NEXT PART, PRESS SPACE :) "
+RETURN
+> PROCEDURE p2_predraw
+  ' *** Draw any canvas you want to use here ***
+  CLS
+  DEFFILL 1,1
+  GRAPHMODE 3
+  FOR i&=0 TO 639
+    LINE 319,199,i&,0
+    LINE 320,200,i&,399
+  NEXT i&
+  DEFTEXT 0,0,0,26
+  GRAPHMODE 2
+  PCIRCLE 79,200,40
+  PCIRCLE 559,200,40
+  TEXT 49,212,"ST"
+  TEXT 529,212,"ST"
+  GRAPHMODE 1
+  '
+  ' *** Move canvas to scrollerscreens ***
+  BMOVE bufferscreen%,cyclescreen%,32000
+  BMOVE bufferscreen%,cyclescreen%+32000,32000
+  FOR buff|=1 TO 3
+    BMOVE cyclescreen%+(320*buff|),cyclescreen%+(64000*buff|),64000-(320*buff|)
+    BMOVE cyclescreen%,cyclescreen%+((64000*buff|)-(320*buff|)),320*buff|
+  NEXT buff|
+  '
+  ' ** Backup to restore each scrollcycle **
+  BMOVE cyclescreen%+53760,scrollrestore%+25600,2560
+  BMOVE cyclescreen%+117760,scrollrestore%+28160,2560
+  BMOVE cyclescreen%+181760,scrollrestore%+30720,2560
+  BMOVE cyclescreen%+245760,scrollrestore%+33280,2560
+RETURN
+> PROCEDURE p2_scroll_start
+  FOR i&=0 TO 0
+    FOR scroll&=0 TO 99
+      VSYNC
+      ' ** Get precalculated screen address **
+      INSERT screen%(0)=screen_precalc%(scroll&)
+      ' **   Create backup of 32 scan lines to use for restore when needed   **
+      ' ** Restore has 20 back-ups so cycle is in sync with 100 scroll steps **
+      BMOVE (screen%(0)+24320),scrollrestore%+MUL(MOD(scroll&,20),1280),1280
+      ~XBIOS(5,L:-1,L:screen%(0),-1) ! Show screen we just built
+    NEXT scroll&
+  NEXT i&
+RETURN
+> PROCEDURE p2_scroll_stage2
+  FOR scroll&=0 TO 99
+    VSYNC
+    INSERT screen%(0)=screen_precalc%(scroll&)
+    BMOVE (screen%(0)+24320),scrollrestore%+MUL(MOD(scroll&,20),1280),1280
+    '
+    ' ** Move first (empty) line of scrollscreen to screen to show **
+    BMOVE scrollscreen%,ADD(screen%(0),23040),2560
+    '
+    ' ** Restore 32 scanlines from 8 screens ago **
+    BMOVE scrollrestore%+MUL(MOD((scroll&+12),20),1280),ADD(screen%(8),24320),1280
+    '
+    ' ** Restore 32 scanlines to current screen, 32 scanlines above location **
+    ' **    of scrolltext. Double restore is needed to clean up all areas    **
+    BMOVE scrollrestore%+MUL(MOD((scroll&+12),20),1280),ADD(screen%(0),21760),1280
+    ~XBIOS(5,L:-1,L:screen%(0),-1) ! Show screen we just built
+  NEXT scroll&
+RETURN
+> PROCEDURE p2_scroll_stage3
+  REPEAT
+    FOR scroll&=0 TO 99
+      VSYNC
+      INSERT screen%(0)=screen_precalc%(scroll&)
+      BMOVE (screen%(0)+24320),scrollrestore%+MUL(MOD(scroll&,20),1280),1280
+      '
+      ' ** Procedure is same as stage 2, except now move text that was there **
+      ' **     4 step ago to new location. Shifted by 1 WORD (16 pixels)     **
+      BMOVE ADD(screen%(4),23042),ADD(screen%(0),23040),2558
+      BMOVE scrollrestore%+MUL(MOD((scroll&+12),20),1280),ADD(screen%(8),24320),1280
+      BMOVE scrollrestore%+MUL(MOD((scroll&+12),20),1280),ADD(screen%(0),21760),1280
+      '
+      ' ** APPEND TO SCROLL TEXT **
+      IF scr%>1919  ! After 12 lines of 160 4-pixel steps => next source screen
+        scr%=0
+        ADD shift%,32000
+      ENDIF
+      IF shift%>64000 ! After source screen 3, go back to source screen 1
+        shift%=0
+      ENDIF
+      '
+      ' ** Coordinates for 4 segments to RC_COPY over 4x32 pixels **
+      rc_x1&=MUL((scr% MOD 160),4)
+      rc_y1&=MUL((scr% DIV 160),32)
+      rc_x2&=MUL(((scr%+1) MOD 160),4)
+      rc_y2&=MUL(((scr%+1) DIV 160),32)
+      rc_x3&=MUL(((scr%+2) MOD 160),4)
+      rc_y3&=MUL(((scr%+2) DIV 160),32)
+      rc_x4&=MUL(((scr%+3) MOD 160),4)
+      rc_y4&=MUL(((scr%+3) DIV 160),32)
+      '
+      ' ** Copy 4 4x32px segments over to append to 16px BMOVEd scrolltext **
+      RC_COPY scrollscreen%+shift%,rc_x1&,rc_y1&,4,32 TO screen%(0),624,288,3
+      RC_COPY scrollscreen%+shift%,rc_x2&,rc_y2&,4,32 TO screen%(0),628,288,3
+      RC_COPY scrollscreen%+shift%,rc_x3&,rc_y3&,4,32 TO screen%(0),632,288,3
+      RC_COPY scrollscreen%+shift%,rc_x4&,rc_y4&,4,32 TO screen%(0),636,288,3
+      INC scr%
+      ~XBIOS(5,L:-1,L:screen%(0),-1)
+    NEXT scroll&
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE p2_scroll_text
+  ' ** Original scrolltext procedure for 2px scrolling instead of 4px. **
+  ' **                    Not used in this demo anymore.               **
+  REPEAT
+    '
+    ' ** MOVE AND ADD TO SCROLL TEXT **
+    IF scr%>2079
+      scr%=0
+      ADD shift%,32000
+    ENDIF
+    IF shift%>64000
+      shift%=0
+    ENDIF
+    rc_x1&=MUL((scr% MOD 320),2)
+    rc_y1&=MUL((scr% DIV 320),31)
+    rc_x2&=MUL(((scr%+1) MOD 320),2)
+    rc_y2&=MUL(((scr%+1) DIV 320),31)
+    rc_x3&=MUL(((scr%+2) MOD 320),2)
+    rc_y3&=MUL(((scr%+2) DIV 320),31)
+    rc_x4&=MUL(((scr%+3) MOD 320),2)
+    rc_y4&=MUL(((scr%+3) DIV 320),31)
+    '
+    RC_COPY scrollscreen%+shift%,rc_x1&,rc_y1&,2,31 TO bufferscreen%,631,304,3
+    RC_COPY scrollscreen%+shift%,rc_x2&,rc_y2&,2,31 TO bufferscreen%,633,304,3
+    RC_COPY scrollscreen%+shift%,rc_x3&,rc_y3&,2,31 TO bufferscreen%,635,304,3
+    RC_COPY scrollscreen%+shift%,rc_x4&,rc_y4&,2,31 TO bufferscreen%,637,304,3
+    INC scr%
+    '
+    @swap
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE p2_endsequence
+  ' ** Show oroginal scroll background **
+  ~XBIOS(5,L:cyclescreen%,L:cyclescreen%,-1)
+  PAUSE 50
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+> PROCEDURE p2_checkscrollscreen
+  ' ** T0 check scrollscreens. Not used in demo **
+  scroll%=0
+  REPEAT
+    IF scroll%>200000
+      scroll%=0
+    ENDIF
+    VSYNC
+    ~XBIOS(5,L:-1,L:scrollscreen%+scroll%,-1)
+    PAUSE 25
+    ADD scroll%,64000
+  UNTIL ASC(INKEY$)=32
+RETURN
+'
+' ** PART 3 **
+> PROCEDURE p3_preps
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,-1)
+  PRINT AT(31,12);"PREPARING NEXT PART"
+  cyclescreen%=(graphbuffer%+255) AND &HFFFFFF00
+  scrollscreen%=cyclescreen%+512000
+  spritebuffer%=scrollscreen%+96000
+RETURN
+> PROCEDURE p3_precalc
+  ' ** Arrays and precalculations fro sprites movement and cleanup **
+  DIM p3_spritexy%(719),p3_src_y%(719)
+  FOR angle&=0 TO 719
+    xbyte%=MUL(DIV(296+240*COSQ(1.5*angle&),16),2)
+    ybyte%=MUL(188-60*SINQ(angle&),80)
+    src_y_shift%=MUL(MOD(296+240*COSQ(1.5*angle&),16),1920)
+    '
+    p3_spritexy%(angle&)=xbyte%+ybyte%
+    p3_src_y%(angle&)=spritebuffer%+src_y_shift%
+  NEXT angle&
+RETURN
+> PROCEDURE p3_predrawprlx
+  '
+  ' *** Make sure graphbuffer is clean ***
+  CLS
+  FOR i&=0 TO 19
+    BMOVE bufferscreen%,cyclescreen%+32000*i&,32000
+  NEXT i&
+  GRAPHMODE 1
+  '
+  ' *** Draw all objects
+  DEFFILL 1,2,4
+  PRBOX 0,0,159,35
+  DEFFILL 1,2,2
+  PRBOX 0,36,127,67
+  DEFFILL 1,2,1
+  PRBOX 0,68,63,91
+  DEFFILL 1,0
+  PRBOX 0,92,31,107
+  DEFFILL 1,2,6
+  PRBOX 0,108,15,119
+  GRAPHMODE 2
+  DEFTEXT 0,0,0,26
+  TEXT 7,29," ASN "
+  DEFTEXT 1,0,0,26
+  TEXT 7,64,"ASN"
+  DEFTEXT 1,0,0,13
+  TEXT 3,85,"ASN"
+  DEFTEXT 1,0,0,4
+  TEXT 1,101,""
+  TEXT 1,102,"  ASN"
+  DEFTEXT 0,0,0,4
+  TEXT 2,115,""
+  '
+  ' *** Creat object lines ***
+  '
+  FOR i&=1 TO 3
+    RC_COPY bufferscreen%,0,0,160,36 TO bufferscreen%,160*i&,0,3
+  NEXT i&
+  FOR i&=1 TO 4
+    RC_COPY bufferscreen%,0,36,128,32 TO bufferscreen%,128*i&,36,3
+  NEXT i&
+  FOR i&=1 TO 9
+    RC_COPY bufferscreen%,0,68,64,24 TO bufferscreen%,64*i&,68,3
+  NEXT i&
+  FOR i&=1 TO 19
+    RC_COPY bufferscreen%,0,92,32,16 TO bufferscreen%,32*i&,92,3
+  NEXT i&
+  FOR i&=1 TO 39
+    RC_COPY bufferscreen%,0,108,16,12 TO bufferscreen%,16*i&,108,3
+  NEXT i&
+  '
+  ' *** Move canvas to 16 pre-shift screens in graphbuffer ***
+  FOR i&=0 TO 15
+    ' ** 160pix objects 10px shift **
+    RC_COPY bufferscreen%,0+10*i&,0,640-10*i&,36 TO cyclescreen%+32000*i&,0,0
+    RC_COPY bufferscreen%,0,0,10*i&,36 TO cyclescreen%+32000*i&,640-10*i&,0
+    RC_COPY bufferscreen%,0+10*i&,0,640-10*i&,36 TO cyclescreen%+32000*i&,0,364
+    RC_COPY bufferscreen%,0,0,10*i&,36 TO cyclescreen%+32000*i&,640-10*i&,364
+    '
+    ' ** 128pix objects with 8px shift **
+    RC_COPY bufferscreen%,0+8*i&,36,640-8*i&,32 TO cyclescreen%+32000*i&,0,36
+    RC_COPY bufferscreen%,0,36,8*i&,32 TO cyclescreen%+32000*i&,640-8*i&,36
+    RC_COPY bufferscreen%,0+8*i&,36,640-8*i&,32 TO cyclescreen%+32000*i&,0,332
+    RC_COPY bufferscreen%,0,36,8*i&,32 TO cyclescreen%+32000*i&,640-8*i&,332
+    '
+    ' ** 64pix objects with 4px shift **
+    RC_COPY bufferscreen%,0+4*i&,68,640-4*i&,24 TO cyclescreen%+32000*i&,0,68
+    RC_COPY bufferscreen%,0,68,4*i&,24 TO cyclescreen%+32000*i&,640-4*i&,68
+    RC_COPY bufferscreen%,0+4*i&,68,640-4*i&,24 TO cyclescreen%+32000*i&,0,308
+    RC_COPY bufferscreen%,0,68,4*i&,24 TO cyclescreen%+32000*i&,640-4*i&,308
+    '
+    ' ** 32pix objects with 2px shift **
+    RC_COPY bufferscreen%,0+2*i&,92,640-2*i&,16 TO cyclescreen%+32000*i&,0,92
+    RC_COPY bufferscreen%,0,92,2*i&,16 TO cyclescreen%+32000*i&,640-2*i&,92
+    RC_COPY bufferscreen%,0+2*i&,92,640-2*i&,16 TO cyclescreen%+32000*i&,0,292
+    RC_COPY bufferscreen%,0,92,2*i&,16 TO cyclescreen%+32000*i&,640-2*i&,292
+    '
+    ' ** 16pix objects with 1px shift **
+    RC_COPY bufferscreen%,i&,108,640-i&,12 TO cyclescreen%+32000*i&,0,108
+    RC_COPY bufferscreen%,0,108,i&,12 TO cyclescreen%+32000*i&,640-i&,108
+    RC_COPY bufferscreen%,i&,108,640-i&,12 TO cyclescreen%+32000*i&,0,280
+    RC_COPY bufferscreen%,0,108,i&,12 TO cyclescreen%+32000*i&,640-i&,280
+  NEXT i&
+RETURN
+> PROCEDURE p3_predrawtext
+  ' ** Similar t part 2, but now for vertical scrolling **
+  ~XBIOS(5,L:scrollscreen%,L:-1,-1)
+  CLS
+  GRAPHMODE 2
+  DEFTEXT 1,0,0,26
+  '
+  ' ** Make sure first 160px of screen 1 are clear **
+  TEXT 0,182,"         ATARI ST NOSTALGIA         "
+  TEXT 0,213,""
+  TEXT 0,244,"        THIS IS MY FINAL GOODBYE        "
+  TEXT 0,275,"             TO MONOCHROME              "
+  TEXT 0,306,""
+  TEXT 0,337,""
+  TEXT 0,368," REMEMBER: THE ST CANNOT MOVE THIS MUCH "
+  TEXT 0,399,"      IT'S ALL JUST AN ILLUSION :)      "
+  '
+  ~XBIOS(5,L:scrollscreen%+32000,L:-1,-1)
+  TEXT 0,27,""
+  TEXT 0,58,""
+  TEXT 0,89,"          I ONLY USED THE STUFF         "
+  TEXT 0,120,"           WE LEARNED SO FAR            "
+  TEXT 0,151,"             IN THIS SERIES:            "
+  TEXT 0,182,""
+  TEXT 0,213,""
+  TEXT 0,244,"          OFF-SCREEN PREDRAW,           "
+  TEXT 0,275,"            SCREEN-SWAPPING,            "
+  TEXT 0,306,"            BMOVE, RC_COPY,             "
+  TEXT 0,337,""
+  TEXT 0,368,"             AND OF COURSE:             "
+  TEXT 0,399,"         LOTS OF PRE-SHIFTING ;)        "
+  '
+  ~XBIOS(5,L:scrollscreen%+64000,L:-1,-1)
+  TEXT 0,27,""
+  TEXT 0,58,""
+  TEXT 0,89,"        I HOPE YOU HAD FUN SO FAR       "
+  TEXT 0,120,""
+  TEXT 0,151,"         SEE YOU SOON IN COLOUR!        "
+  TEXT 0,182,""
+  TEXT 0,213,""
+  TEXT 0,244,""
+RETURN
+> PROCEDURE p3_predrawspr
+  CLS
+  GRAPHMODE 1
+  ' ** 48*21px sprite. 21 lines is the max to stay within 1VBL with this song **
+  DEFFILL 1,2,22
+  PRBOX 0,0,47,20
+  DEFTEXT 1,0,0,13
+  TEXT 4,16,"ASN"
+  '
+  ' ** MASK **
+  DEFFILL 1,1
+  PRBOX 128,0,175,20
+  PBOX 256,0,319,20
+  '
+  ' **Copy 16 shifts of spites to spritebuffer% **
+  FOR shift&=0 TO 15
+    RC_COPY bufferscreen%,0,0,320,24 TO spritebuffer%,shift&,MUL(shift&,24),3
+    RC_COPY bufferscreen%,256,0,64,24 TO spritebuffer%,128,MUL(shift&,24),6
+  NEXT shift&
+RETURN
+> PROCEDURE p3_loop_backgr
+  FOR loop&=0 TO 20
+    FOR scroll%=0 TO 480000 STEP 32000
+      VSYNC
+      ~XBIOS(5,L:-1,L:cyclescreen%+scroll%,-1)
+      BMOVE scrollscreen%,cyclescreen%+scroll%+9600,12480
+    NEXT scroll%
+  NEXT loop&
+RETURN
+> PROCEDURE p3_loop_spr
+  angle1&=0
+  angle2&=360
+  REPEAT
+    IF angle1&>719
+      angle1&=0
+    ENDIF
+    IF angle2&>719
+      angle2&=0
+    ENDIF
+    IF scroll%>480000
+      scroll%=0
+    ENDIF
+    VSYNC
+    '
+    ' ** Go to next cyclescreen and put "scrolltext". Also cleans up **
+    playscreen%=ADD(cyclescreen%,scroll%)
+    BMOVE scrollscreen%,playscreen%+9600,12480
+    '
+    ' ** Put new masks and sprites **
+    FOR spriteline%=0 TO 1600 STEP 80
+      sprite%=ADD(ADD(p3_spritexy%(angle1&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      '
+      sprite%=ADD(ADD(p3_spritexy%(angle2&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+    NEXT spriteline%
+    INC angle1&
+    INC angle2&
+    ADD scroll%,32000
+    ~XBIOS(5,L:-1,L:playscreen%,-1)
+  UNTIL angle1&=360
+RETURN
+> PROCEDURE p3_loop_scroll
+  text%=0
+  REPEAT
+    IF angle1&>719
+      angle1&=0
+    ENDIF
+    IF angle2&>719
+      angle2&=0
+    ENDIF
+    IF scroll%>480000
+      scroll%=0
+    ENDIF
+    IF text%=83200
+      text%=0
+    ENDIF
+    VSYNC
+    '
+    ' ** Next screen, an BMOVE scrolltext. Also cleans up **
+    playscreen%=ADD(cyclescreen%,scroll%)
+    BMOVE scrollscreen%+text%,playscreen%+9600,12800
+    '
+    ' ** Put new masks and sprites **
+    FOR spriteline%=0 TO 1600 STEP 80
+      sprite%=ADD(ADD(p3_spritexy%(angle1&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      '
+      sprite%=ADD(ADD(p3_spritexy%(angle2&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+    NEXT spriteline%
+    INC angle1&
+    INC angle2&
+    ADD scroll%,32000
+    ~XBIOS(5,L:-1,L:playscreen%,-1)
+    '
+    ' ====================================================
+    ' **** Second repeat to slow down vertical scroll ****
+    ' ====================================================
+    IF angle1&>719
+      angle1&=0
+    ENDIF
+    IF angle1&>719
+      angle1&=0
+    ENDIF
+    IF scroll%>480000
+      scroll%=0
+    ENDIF
+    VSYNC
+    '
+    ' ** Next screen, and BMOVE scrolltext. Also cleans up **
+    playscreen%=ADD(cyclescreen%,scroll%)
+    BMOVE scrollscreen%+text%,playscreen%+9600,12800
+    '
+    ' ** Put new masks and sprites **
+    FOR spriteline%=0 TO 1600 STEP 80
+      sprite%=ADD(ADD(p3_spritexy%(angle1&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle1&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle1&)+spriteline%},{sprite%+4})
+      '
+      sprite%=ADD(ADD(p3_spritexy%(angle2&),spriteline%),playscreen%)
+      {sprite%}=AND({16+p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%}=OR({p3_src_y%(angle2&)+spriteline%},{sprite%})
+      {sprite%+4}=AND({20+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+      {sprite%+4}=OR({4+p3_src_y%(angle2&)+spriteline%},{sprite%+4})
+    NEXT spriteline%
+    INC angle1&
+    INC angle2&
+    ADD scroll%,32000
+    ADD text%,80
+    ~XBIOS(5,L:-1,L:playscreen%,-1)
+  UNTIL ASC(INKEY$)=32
+RETURN
+> PROCEDURE p3_endsequence
+  ' ** Write to XBIOS(2) and use PBOX to clear "preparing next part" message **
+  ~XBIOS(5,L:physicalscreen%,L:playscreen%,-1)
+  DEFFILL 0
+  PBOX 150,150,500,250
+  ~XBIOS(5,L:playscreen%,L:playscreen%,-1)
+  PAUSE 50
+  DEFFILL 0
+  FOR box&=0 TO 200
+    PBOX 0,200-box&,639,200-(box&+1)
+    PBOX 0,200+box&,639,200+(box&+1)
+  NEXT box&
+RETURN
+'
+' *** General procedures for ST and STF in monochrome ***
+'
+> PROCEDURE generalpreps
+  '
+  ' *** Compiler options ***
+  $m64000 ! memory need for the program 2 be compiled - OR RESERVE...
+  $I- ! disable interrupt routine  -  $I+{ would enable them
+  $N- ! Disable FOR-NEXT range checking
+  ' $S> ! Fast select case  -  $C< slower but shorter code
+  ' $*& ! Longword multiplication with muls  -  $*% :  without
+  ' $%3 ! Always execute integer division as an integer division  -   $%0 = opposite
+  '
+  '
+  ' *** Disable mouse, and then go to supervisor mode and reserve RAM ***
+  '
+  OUT 4,18                ! Disable mouse
+  sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
+  compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
+  IF NOT compiled!
+    RESERVE 64000 ! if run under interpreter
+  ENDIF
+  '
+  ' *** Create bufferscreen and get screen adresses ***
+  '
+  predrawbuffer%=MALLOC(32255) ! Create memory buffer for pre-draw screen
+  IF predrawbuffer%<=0         ! If unsuccesfull, leave supervisor end exit
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 ! Buffer screen address
+  logicalscreen%=XBIOS(3)                           ! Logical screen address
+  logicalbackup%=logicalscreen%
+  physicalscreen%=XBIOS(2)                          ! Physical screen address
+  CLS
+  BMOVE physicalscreen%,bufferscreen%,32000         ! Clear buffer screen
+  '
+  ' *** Optional: Create graphicsbuffer to grab from with BMOVE or RC_COPY
+  '
+  graphbuffer%=MALLOC(640255) ! Allocate memory to store graphics and stuff
+  IF graphbuffer%<=0
+    ~GEMDOS(32,L:sup%)
+    IF NOT compiled!
+      RESERVE
+    ENDIF
+    EDIT
+  ENDIF
+  '
+  ' *** Save keyboard and interrupts ***
+  '
+  key|=BYTE{&H484}            ! save keyboard
+  inter|=BYTE{&HFFFA09}       ! save interrupts
+  BYTE{&H484}=AND(key|,&HFE)  ! keyboard sound off
+  '  BYTE{&H484}=0            ! keyboard off
+  ON ERROR GOSUB generalcleanup ! On error cleanup and quit
+  ON BREAK GOSUB generalcleanup ! On break cleanup and quit
+RETURN
+> PROCEDURE generalcleanup
+  ~MFREE(predrawbuffer%)     ! Free screen buffer (Maybe not needed)
+  ~MFREE(graphbuffer%)       ! Free graphbuffer (Maybe not needed)
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2) ! Default screens
+  BYTE{&H484}=key|           ! restore keyboard
+  BYTE{&HFFFA09}=inter|      ! restore interrupts
+  {&H4D2}=0                  ! Stop any music that was playing
+  WAVE 0,0                   ! Stop any sound that was playing
+  ~GEMDOS(32,L:sup%)         ! Back to user mode
+  OUT 4,8                    ! Enable mouse
+  IF NOT compiled!
+    RESERVE
+  ENDIF
+  SETCOLOR 0,1
+  EDIT
+RETURN
+> PROCEDURE defaultscreen
+  ' *** Set output back to default single screen buffer ***
+  ~XBIOS(5,L:physicalscreen%,L:physicalscreen%,2)
+RETURN
+> PROCEDURE bufferscreen
+  ' *** Set screen to buffer screen ***
+  ~XBIOS(5,L:bufferscreen%,L:-1,-1)
+RETURN
+> PROCEDURE swap
+  SWAP bufferscreen%,logicalscreen%
+  ~XBIOS(5,L:bufferscreen%,L:logicalscreen%,-1)
+RETURN
+> PROCEDURE resetscreens
+  ' ** Sets bufferscreen and logicalscreen as they were **
+  bufferscreen%=(predrawbuffer%+255) AND &HFFFFFF00 !
+  logicalscreen%=logicalbackup%
+RETURN
