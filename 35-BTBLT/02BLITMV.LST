@@ -155,7 +155,7 @@ RETURN
   sup%=GEMDOS(32,L:0)     ! Go to supervisor mode
   compiled!=BYTE{BASEPAGE+256}<>96  ! false=interpreted/true=compiled
   IF NOT compiled!
-    RESERVE 256000 ! if run under interpreter
+    RESERVE 32000 ! if run under interpreter
   ENDIF
   '
   ' *** Create bufferscreen and get screen adresses ***
